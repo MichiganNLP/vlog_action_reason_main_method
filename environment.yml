@@ -1,0 +1,20 @@
+name: intention-fitb
+channels:
+  - pytorch
+dependencies:
+  - pip:
+    # We could use the Anaconda channel "HuggingFace".
+    # However, `tokenizers` was compiled with glibc 2.18, while Great Lakes has 2.17.
+    # See https://github.com/huggingface/tokenizers/issues/585
+    # There are some non-popular glibc packages available in Anaconda, but Python needs to be linked to it as well.
+    # This is cumbersome, so we just use pip.
+    - transformers==4.5.1
+  - conda-forge::cudatoolkit=11.1.1
+  - conda-forge::cudnn=8.1.0.77
+  - numpy=1.20.1
+  - conda-forge::overrides=3.1.0
+  - pandas=1.2.4
+  - pip=21.1
+  - python=3.8
+  - pytorch=1.8.1
+  - conda-forge::pytorch-lightning=1.2.10
