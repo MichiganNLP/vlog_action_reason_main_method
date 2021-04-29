@@ -8,9 +8,9 @@ from pytorch_lightning.utilities.parsing import get_init_args
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler  # noqa
 from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, get_linear_schedule_with_warmup
-from transformers.modeling_outputs import Seq2SeqLMOutput
+from transformers.modeling_outputs import BaseModelOutput, Seq2SeqLMOutput
 
-from ifitb.data.intention_dataset import TYPE_BATCH
+from ifitb.data.intention_dataset import TYPE_BATCH as TYPE_INTENTION_BATCH
 from ifitb.model.decoding import compute_label_normalized_logits, compute_label_prob
 
 
@@ -86,31 +86,33 @@ class T5FillerModel(pl.LightningModule):
                    choices_ids: torch.Tensor, text: Sequence[str], choices: Sequence[Sequence[str]],
                    video_id: Optional[Sequence[str]], video_start_time: Optional[Sequence[int]],
                    video_end_time: Optional[Sequence[int]], log_prefix: str = "", **kwargs) -> None:
-        self.write_prediction("video_id", video_id)
-        self.write_prediction("video_start_time", video_start_time)
-        self.write_prediction("video_end_time", video_end_time)
-        self.write_prediction("text", text)
+        self.write_prediction("video_id", video_id)  # noqa
+        self.write_prediction("video_start_time", torch.tensor(video_start_time))
+        self.write_prediction("video_end_time", torch.tensor(video_end_time))
+        self.write_prediction("text", text)  # noqa
+        self.write_prediction("choices", choices)  # noqa
 
-        self.write_prediction("choices", choices)
+        # Compute the first choice of each instance, save the encoder output, then compute the rest.
 
-        # if self.t5_pretrained_model.config.is_encoder_decoder:  # TODO
-        #     # Reuse the encoder output to avoid computing it twice.
-        #     kwargs["encoder_outputs"] = BaseModelOutput(
-        #         last_hidden_state=generated_output.encoder_hidden_states[-1],
-        #         hidden_states=generated_output.encoder_hidden_states,
-        #         attentions=generated_output.encoder_attentions,
-        #     )
+        first_choice_ids = choices_ids[:, 0].clone()  # `clone` so `view` works when computing the cross-entropy loss.
 
-        choices_ids = choices_ids[:, 0].clone()  # FIXME: compute it for all the choices. `clone` so `view` works.
+        output = self(text_ids, text_attention_mask, first_choice_ids, **kwargs)
+        self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
 
-        choices_output = self(text_ids, text_attention_mask, choices_ids, **kwargs)
-        self.log(f"{log_prefix}loss", choices_output.loss, prog_bar=True)
-
-        choices_normalized_logits = compute_label_normalized_logits(choices_output.logits, choices_ids,
+        choices_normalized_logits = compute_label_normalized_logits(output.logits, first_choice_ids,
                                                                     self.t5_pretrained_model.config,
                                                                     ignore_eos_token=True)
         choices_prob = compute_label_prob(choices_normalized_logits)
         self.write_prediction("choices_prob", choices_prob)
+
+        if choices_ids.shape[1] > 1:
+            if self.t5_pretrained_model.config.is_encoder_decoder:
+                # Reuse the encoder output to avoid computing it multiple times.
+                kwargs["encoder_outputs"] = BaseModelOutput(last_hidden_state=output.encoder_hidden_states[-1],
+                                                            hidden_states=output.encoder_hidden_states,
+                                                            attentions=output.encoder_attentions)
+
+            # TODO: compute it for all the choices.
 
         # perplexity_mask = ((choices_ids != self.t5_pretrained_model.config.pad_token_id)
         #                    & (choices_ids != self.t5_pretrained_model.config.eos_token_id))
@@ -121,11 +123,11 @@ class T5FillerModel(pl.LightningModule):
         #         self.log(f"{log_prefix}{k}_step", v, prog_bar=True)
 
     @overrides
-    def validation_step(self, batch: TYPE_BATCH, batch_idx: int = 0) -> None:
+    def validation_step(self, batch: TYPE_INTENTION_BATCH, batch_idx: int = 0) -> None:
         self._eval_step(**batch, log_prefix="val_")
 
     @overrides
-    def test_step(self, batch: TYPE_BATCH, batch_idx: int = 0) -> None:
+    def test_step(self, batch: TYPE_INTENTION_BATCH, batch_idx: int = 0) -> None:
         self._eval_step(**batch, log_prefix="test_")
 
     def _on_epoch_end(self, log_prefix: str = "") -> None:
