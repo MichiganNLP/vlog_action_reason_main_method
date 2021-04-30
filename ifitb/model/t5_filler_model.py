@@ -8,7 +8,7 @@ from pytorch_lightning.utilities.parsing import get_init_args
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler  # noqa
 from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, get_linear_schedule_with_warmup
-from transformers.modeling_outputs import BaseModelOutput, Seq2SeqLMOutput
+from transformers.modeling_outputs import Seq2SeqLMOutput
 
 from ifitb.data.intention_dataset import TYPE_BATCH as TYPE_INTENTION_BATCH
 from ifitb.model.decoding import compute_label_normalized_logits, compute_label_prob
@@ -92,30 +92,42 @@ class T5FillerModel(pl.LightningModule):
         self.write_prediction("text", text)  # noqa
         self.write_prediction("choices", choices)  # noqa
 
-        # Compute the first choice of each instance, save the encoder output, then compute the rest.
+        # Encode the input only once, then reuse for the choices.
+        kwargs = self.t5_pretrained_model._prepare_encoder_decoder_kwargs_for_generation(text_ids,  # noqa
+                                                                                         {"output_hidden_states": True,
+                                                                                          "output_attentions": True,
+                                                                                          **kwargs})
 
-        first_choice_ids = choices_ids[:, 0].clone()  # `clone` so `view` works when computing the cross-entropy loss.
+        # TODO (optimization): `expand` every variable, reshape choice_ids
+        # batch_size, max_choice_count = choices_ids.shape[:2]
+        #
+        # text_ids = (text_ids
+        #             .unsqueeze(1)
+        #             .expand(-1, max_choice_count, -1)
+        #             .view(batch_size * max_choice_count, -1))
+        # text_attention_mask = (text_attention_mask
+        #                        .unsqueeze(1)
+        #                        .expand(-1, max_choice_count, -1)
+        #                        .view(batch_size * max_choice_count, -1))
 
-        kwargs.setdefault("output_hidden_states", True)
-        kwargs.setdefault("output_attentions", True)
+        float_dtype = kwargs["encoder_outputs"].last_hidden_state.dtype
 
-        output = self(text_ids, text_attention_mask, first_choice_ids, **kwargs)
-        self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
+        choices_prob = torch.empty_like(choices_ids[:, :, 0], dtype=float_dtype)
 
-        choices_normalized_logits = compute_label_normalized_logits(output.logits, first_choice_ids,
-                                                                    self.t5_pretrained_model.config,
-                                                                    ignore_eos_token=True)
-        choices_prob = compute_label_prob(choices_normalized_logits)
-        self.write_prediction("choices_prob", choices_prob)
+        for i, choice_ids in enumerate(choices_ids.transpose(1, 0)):
+            choice_ids = choice_ids.clone()  # So `view()` works when computing the cross-entropy loss.
 
-        if choices_ids.shape[1] > 1:
-            if self.t5_pretrained_model.config.is_encoder_decoder:
-                # Reuse the encoder output to avoid computing it multiple times.
-                kwargs["encoder_outputs"] = BaseModelOutput(last_hidden_state=output.encoder_hidden_states[-1],
-                                                            hidden_states=output.encoder_hidden_states,
-                                                            attentions=output.encoder_attentions)
+            output = self(text_ids, text_attention_mask, choice_ids, **kwargs)
+            self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
 
-            # TODO: compute it for all the choices.
+            choice_normalized_logits = compute_label_normalized_logits(output.logits, choice_ids,
+                                                                       self.t5_pretrained_model.config,
+                                                                       ignore_eos_token=True)
+            choices_prob[:, i] = compute_label_prob(choice_normalized_logits)
+
+        # Can't write the predictions because they have different sizes when concatenating the tensors across batches,
+        # depending on the max number of choices in each batch.
+        # self.write_prediction("choices_prob", choices_prob)
 
         # perplexity_mask = ((choices_ids != self.t5_pretrained_model.config.pad_token_id)
         #                    & (choices_ids != self.t5_pretrained_model.config.eos_token_id))
