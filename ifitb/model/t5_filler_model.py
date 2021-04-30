@@ -37,12 +37,8 @@ class T5FillerModel(pl.LightningModule):
         self.t5_pretrained_model = t5_like_pretrained_model
 
         self.tokenizer = tokenizer
+
         # self.metrics = ...  # TODO
-
-        self.extra_id_0 = self.tokenizer.convert_tokens_to_ids(["<extra_id_0>"])[0]
-        self.extra_id_1 = self.tokenizer.convert_tokens_to_ids(["<extra_id_1>"])[0]
-
-        self.all_token_ids = torch.arange(self.t5_pretrained_model.config.vocab_size)  # noqa
 
     @overrides
     def on_epoch_start(self) -> None:
