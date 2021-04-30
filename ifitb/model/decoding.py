@@ -22,10 +22,10 @@ def compute_label_normalized_logits(logits: torch.Tensor, label_ids: torch.Tenso
     label_normalized_logits = normalized_logits[torch.arange(N)[:, None], torch.arange(L)[None], label_ids]
 
     if model_config.pad_token_id is not None:
-        label_normalized_logits[label_ids == model_config.pad_token_id] = 1
+        label_normalized_logits[label_ids == model_config.pad_token_id] = 0
 
     if ignore_eos_token and model_config.eos_token_id is not None:
-        label_normalized_logits[label_ids == model_config.eos_token_id] = 1
+        label_normalized_logits[label_ids == model_config.eos_token_id] = 0
 
     return label_normalized_logits
 
