@@ -125,9 +125,14 @@ class T5FillerModel(pl.LightningModule):
                                                                        ignore_eos_token=True)
             choices_prob[:, i] = compute_label_prob(choice_normalized_logits)
 
-        # Can't write the predictions because they have different sizes when concatenating the tensors across batches,
-        # depending on the max number of choices in each batch.
-        # self.write_prediction("choices_prob", choices_prob)
+        # Use a list to remove the padding but also because using tensor will cause issues. It's because they have
+        # different sizes when concatenating the tensors across batches, depending on the max number of choices in each
+        # batch.
+        choices_prob_list = [[choice_prob.item()
+                              for choice_prob, choice_ids in zip(choices_prob_instance, choices_ids_instance)
+                              if (choice_ids != 0).any()]
+                             for choices_prob_instance, choices_ids_instance in zip(choices_prob, choices_ids)]
+        self.write_prediction("choices_prob", choices_prob_list)  # noqa
 
         # perplexity_mask = ((choices_ids != self.t5_pretrained_model.config.pad_token_id)
         #                    & (choices_ids != self.t5_pretrained_model.config.eos_token_id))
