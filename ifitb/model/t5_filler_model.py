@@ -96,6 +96,9 @@ class T5FillerModel(pl.LightningModule):
 
         first_choice_ids = choices_ids[:, 0].clone()  # `clone` so `view` works when computing the cross-entropy loss.
 
+        kwargs.setdefault("output_hidden_states", True)
+        kwargs.setdefault("output_attentions", True)
+
         output = self(text_ids, text_attention_mask, first_choice_ids, **kwargs)
         self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
 
