@@ -4,6 +4,8 @@ from typing import Any, Mapping, Optional
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizerBase
 
+from ifitb.util.file_utils import cached_path
+
 
 class FitbDataset(Dataset):
     def __init__(self, data_path: str, tokenizer: Optional[PreTrainedTokenizerBase] = None,
@@ -14,7 +16,7 @@ class FitbDataset(Dataset):
         self.t5_format = t5_format
         self.output_visual = output_visual
 
-        with open(data_path) as file:
+        with open(cached_path(data_path)) as file:
             instances_by_action = json.load(file)
 
         self.instances = [

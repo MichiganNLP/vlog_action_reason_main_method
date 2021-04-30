@@ -84,11 +84,11 @@ class T5FillerModel(pl.LightningModule):
 
     def _eval_step(self, text_ids: torch.Tensor, text_attention_mask: torch.Tensor,
                    choices_ids: torch.Tensor, text: Sequence[str], choices: Sequence[Sequence[str]],
-                   video_id: Optional[Sequence[str]], video_start_time: Optional[Sequence[int]],
-                   video_end_time: Optional[Sequence[int]], log_prefix: str = "", **kwargs) -> None:
+                   video_id: Optional[Sequence[str]], video_start_time: Optional[Sequence[str]],
+                   video_end_time: Optional[Sequence[str]], log_prefix: str = "", **kwargs) -> None:
         self.write_prediction("video_id", video_id)  # noqa
-        self.write_prediction("video_start_time", torch.tensor(video_start_time))
-        self.write_prediction("video_end_time", torch.tensor(video_end_time))
+        self.write_prediction("video_start_time", video_start_time)  # noqa
+        self.write_prediction("video_end_time", video_end_time)  # noqa
         self.write_prediction("text", text)  # noqa
         self.write_prediction("choices", choices)  # noqa
 

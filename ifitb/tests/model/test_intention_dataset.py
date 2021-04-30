@@ -1,12 +1,12 @@
 from unittest import TestCase
 
-from ifitb.data.data_module import PATH_DATA, PATH_REASONS_BY_VERB
+from ifitb.data.data_module import URL_INTENTIONS_DATA, URL_REASONS_BY_VERB
 from ifitb.data.intention_dataset import IntentionDataset
 
 
 class TestIntentionDataset(TestCase):
     def test_dataset_format(self):
-        dataset = IntentionDataset(PATH_REASONS_BY_VERB, PATH_DATA)
+        dataset = IntentionDataset(URL_REASONS_BY_VERB, URL_INTENTIONS_DATA)
         expected_first_item = {
             "text": "I had to wake up early for that And I had to get ready put on makeup and start a eventful and epic"
                     " day It was a very fulfilling day but I was exhausted because I got like four hours of sleep as"

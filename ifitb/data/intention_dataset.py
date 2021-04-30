@@ -8,6 +8,8 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizerBase
 
+from ifitb.util.file_utils import cached_path
+
 RE_WORD_BOUNDARY = re.compile(r"\b")
 
 TYPE_BATCH = MutableMapping[str, Any]
@@ -29,10 +31,10 @@ class IntentionDataset(Dataset):
         self.t5_format = t5_format
         self.output_visual = output_visual
 
-        with open(reasons_by_verb_path) as file:
+        with open(cached_path(reasons_by_verb_path)) as file:
             choices_by_action = json.load(file)
 
-        with open(data_path) as file:
+        with open(cached_path(data_path)) as file:
             instances_by_action = json.load(file)
 
         self.instances = []
