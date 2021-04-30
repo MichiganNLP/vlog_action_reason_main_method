@@ -67,20 +67,20 @@ class T5FillerModel(pl.LightningModule):
 
         return output
 
-    # def training_step(self, batch: TYPE_BATCH, batch_idx: int = 0) -> torch.Tensor:  # TODO
-    #     text_ids = batch.pop("text_ids")
-    #     text_attention_mask = batch.pop("text_attention_mask", None)
-    #     choices_ids = batch.pop("choices_ids")
-    #
-    #     del batch["video_id"]
-    #     del batch["video_start_time"]
-    #     del batch["video_end_time"]
-    #     del batch["text"]
-    #     del batch["choices"]
-    #
-    #     loss = self(text_ids, text_attention_mask, choices_ids, **batch)["loss"]
-    #     self.log("loss", loss)
-    #     return loss
+    def training_step(self, batch: TYPE_INTENTION_BATCH, batch_idx: int = 0) -> torch.Tensor:  # FIXME: batch type
+        text_ids = batch.pop("text_ids")
+        text_attention_mask = batch.pop("text_attention_mask", None)
+        choices_ids = batch.pop("choices_ids")
+
+        del batch["video_id"]
+        del batch["video_start_time"]
+        del batch["video_end_time"]
+        del batch["text"]
+        del batch["choices"]
+
+        loss = self(text_ids, text_attention_mask, choices_ids, **batch)["loss"]
+        self.log("loss", loss)
+        return loss
 
     def _eval_step(self, text_ids: torch.Tensor, text_attention_mask: torch.Tensor,
                    choices_ids: torch.Tensor, text: Sequence[str], choices: Sequence[Sequence[str]],
