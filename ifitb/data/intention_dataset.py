@@ -9,17 +9,11 @@ from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizerBase
 
 from ifitb.util.file_utils import cached_path
+from ifitb.util.mask_utils import get_mask_from_sequence_lengths
 
 RE_WORD_BOUNDARY = re.compile(r"\b")
 
 TYPE_BATCH = MutableMapping[str, Any]
-
-
-# From https://stackoverflow.com/a/53403392/1165181
-# There's also one in https://github.com/allenai/allennlp/blob/4535f5c/allennlp/nn/util.py#L119
-def get_mask_from_sequence_lengths(lengths: torch.Tensor) -> torch.Tensor:
-    max_length = lengths.max()
-    return torch.arange(max_length).expand(len(lengths), max_length) < lengths.unsqueeze(1)  # noqa
 
 
 class IntentionDataset(Dataset):
@@ -61,6 +55,7 @@ class IntentionDataset(Dataset):
     def __len__(self) -> int:
         return len(self.instances)
 
+    # noinspection DuplicatedCode
     def collate_fn(self, instances: Iterable[TYPE_BATCH]) -> TYPE_BATCH:
         keys = next(iter(instances), {})
         batch = {k: [instance[k] for instance in instances] for k in keys}

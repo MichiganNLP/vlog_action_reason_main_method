@@ -10,6 +10,7 @@ from torch.optim.lr_scheduler import _LRScheduler  # noqa
 from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, get_linear_schedule_with_warmup
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
+from ifitb.data.fitb_dataset import TYPE_BATCH as TYPE_FITB_BATCH
 from ifitb.data.intention_dataset import TYPE_BATCH as TYPE_INTENTION_BATCH
 from ifitb.model.decoding import compute_label_normalized_logits, compute_label_prob
 
@@ -47,8 +48,13 @@ class T5FillerModel(pl.LightningModule):
 
     @overrides
     def forward(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None,
-                label_ids: Optional[torch.Tensor] = None, revert_changes_to_label_ids: bool = True,
+                label_ids: Optional[torch.Tensor] = None, revert_changes_to_label_ids: Optional[bool] = None,
                 **kwargs) -> Seq2SeqLMOutput:
+        # Note that if changes to `label_ids` are reverted the in-place operation it's gonna cause issues with the
+        # gradients. So we default to false in training mode and true in eval mode.
+        revert_changes_to_label_ids = self.training if revert_changes_to_label_ids is None \
+            else revert_changes_to_label_ids
+
         # Note that passing a mask for the `label_ids` isn't necessary because the decoding is left to right (thus
         # the padding embeddings can only affect the next padding to be generating) and because they are not computed
         # in the loss value if using the `-100` value.
@@ -63,18 +69,19 @@ class T5FillerModel(pl.LightningModule):
 
         return output
 
-    def training_step(self, batch: TYPE_INTENTION_BATCH, batch_idx: int = 0) -> torch.Tensor:  # FIXME: batch type
-        text_ids = batch.pop("text_ids")
-        text_attention_mask = batch.pop("text_attention_mask", None)
-        choices_ids = batch.pop("choices_ids")
+    def training_step(self, batch: TYPE_FITB_BATCH, batch_idx: int = 0) -> torch.Tensor:
+        input_ids = batch.pop("text_with_blanks_ids")
+        input_attention_mask = batch.pop("text_with_blanks_attention_mask", None)
+        label_ids = batch.pop("label_ids")
 
         del batch["video_id"]
         del batch["video_start_time"]
         del batch["video_end_time"]
-        del batch["text"]
-        del batch["choices"]
+        del batch["text_with_blanks"]
+        del batch["label"]
+        del batch["label_attention_mask"]
 
-        loss = self(text_ids, text_attention_mask, choices_ids, **batch)["loss"]
+        loss = self(input_ids, input_attention_mask, label_ids, revert_changes_to_label_ids=False, **batch)["loss"]
         self.log("loss", loss)
         return loss
 
@@ -111,9 +118,10 @@ class T5FillerModel(pl.LightningModule):
         choices_prob = torch.empty_like(choices_ids[:, :, 0], dtype=float_dtype)
 
         for i, choice_ids in enumerate(choices_ids.transpose(1, 0)):
-            choice_ids = choice_ids.clone()  # So `view()` works when computing the cross-entropy loss.
-
-            output = self(text_ids, text_attention_mask, choice_ids, **kwargs)
+            # `clone()` so `view()` works when computing the cross-entropy loss.
+            # It's also convenient so we skip reverting the values as well.
+            output = self(text_ids, text_attention_mask, choice_ids.clone(), revert_changes_to_label_ids=False,
+                          **kwargs)
             self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
 
             choice_normalized_logits = compute_label_normalized_logits(output.logits, choice_ids,

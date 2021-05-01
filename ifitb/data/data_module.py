@@ -35,7 +35,7 @@ class IntentionFitbDataModule(pl.LightningDataModule):  # noqa
                               output_visual=self.output_visual)
         # TODO: bucket-batching could make training faster, and consume less memory.
         return DataLoader(dataset, shuffle=True, batch_size=self.batch_size, num_workers=self.num_workers,
-                          pin_memory=True)
+                          pin_memory=True, collate_fn=None if self.eval_batch_size is None else dataset.collate_fn)
 
     def _eval_dataloader(self) -> DataLoader:
         dataset = IntentionDataset(self.reasons_by_verb_path, self.intentions_data_path, self.tokenizer,
