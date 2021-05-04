@@ -7,7 +7,8 @@ from overrides import overrides
 from pytorch_lightning.utilities.parsing import get_init_args
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler  # noqa
-from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, get_linear_schedule_with_warmup
+from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, \
+    get_linear_schedule_with_warmup
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 from ifitb.data.fitb_dataset import TYPE_BATCH as TYPE_FITB_BATCH
@@ -33,7 +34,9 @@ class T5FillerModel(pl.LightningModule):
 
         # The model doesn't necessarily use T5 classes (e.g., `T5PreTrainedModel`).
         # It just needs to be pretrained like T5 and support conditional generation.
+        #
         # Commented out as it induced lint warnings in PyCharm 2021.
+        # See https://youtrack.jetbrains.com/issue/PY-48654
         # assert isinstance(t5_like_pretrained_model, tuple(MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING.values()))
         self.t5_pretrained_model = t5_like_pretrained_model
 
