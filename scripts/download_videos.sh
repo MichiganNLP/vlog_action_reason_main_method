@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 
-#input_file=data/dict_sentences_per_verb_MARKERS_for_annotation.json
-#input_file=data/dict_sentences_per_verb_MARKERS_for_annotation_trial1.json
-#input_file=data/dict_sentences_per_verb_MARKERS_for_annotation_check_others.json
-#input_file=data/dict_sentences_per_verb_MARKERS_for_annotation_all50_nocheck.json
-input_file=data/dict_sentences_per_verb_MARKERS_for_annotation_all50_nocheck_remain.json
-#output_folder=../miniclips/check_others
-#output_folder=../miniclips/no_check
-output_folder=../miniclips2
+input_file=$1
+output_folder=$2
 
 mapfile -t video_ids < <(jq --raw-output '.[] | .[] | .video' "$input_file")
 
@@ -70,7 +64,7 @@ for i in "${!video_ids[@]}"; do
   # -avoid_negative_ts 1 \
   # Note "-to" doesn't work if "-ss" is before the video, which should to be.
   # So using "-t".
-  /snap/bin/ffmpeg \
+  ffmpeg \
     -ss "$start_time" \
     -i "$video_url" \
     -ss "$start_time" \

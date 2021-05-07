@@ -3,7 +3,10 @@ channels:
   - pytorch
 dependencies:
   - pip:
-    # We could use the Anaconda channel "HuggingFace".
+    # `av` from conda-forge uses an ffmpeg version from the same Conda channel that doesn't have the AV codecs
+    # (which some of our videos use). See https://github.com/conda-forge/ffmpeg-feedstock/pull/98
+    - av==8.0.3
+    # We could use the Conda channel "HuggingFace".
     # However, `tokenizers` was compiled with glibc 2.18, while Great Lakes has 2.17.
     # See https://github.com/huggingface/tokenizers/issues/585
     # There are some non-popular glibc packages available in Anaconda, but Python needs to be linked to it as well.
@@ -21,3 +24,5 @@ dependencies:
   - pytorch=1.8.1
   - conda-forge::pytorch-lightning=1.2.10
   - conda-forge::rarfile=4.0  # For `cached_path`.
+  - torchvision=0.9.1
+  - tqdm=4.59.0
