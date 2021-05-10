@@ -46,6 +46,7 @@ class IntentionDataset(Dataset):
                         "video_start_time": instance["time_s"],
                         "video_end_time": instance["time_e"],
                         "choices": choices,
+                        # TODO: gt
                     })
 
     def __getitem__(self, i: int) -> Mapping[str, Any]:
