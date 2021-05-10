@@ -14,6 +14,7 @@ from transformers.modeling_outputs import Seq2SeqLMOutput
 from ifitb.data.fitb_dataset import TYPE_BATCH as TYPE_FITB_BATCH
 from ifitb.data.intention_dataset import TYPE_BATCH as TYPE_INTENTION_BATCH
 from ifitb.model.decoding import compute_label_normalized_logits, compute_label_prob
+from ifitb.model.t5_format_processing import compute_first_blank
 
 
 class T5FillerModel(pl.LightningModule):
@@ -43,6 +44,14 @@ class T5FillerModel(pl.LightningModule):
         self.tokenizer = tokenizer
 
         # self.metrics = ...  # TODO
+
+        self.generate_kwargs = {}
+
+        self.generate_kwargs.setdefault("return_dict_in_generate", True)
+        self.generate_kwargs.setdefault("output_scores", True)
+
+        self.extra_id_0 = self.tokenizer.convert_tokens_to_ids(["<extra_id_0>"])[0]
+        self.extra_id_1 = self.tokenizer.convert_tokens_to_ids(["<extra_id_1>"])[0]
 
     @overrides
     def on_epoch_start(self) -> None:
@@ -140,6 +149,16 @@ class T5FillerModel(pl.LightningModule):
                               if (choice_ids != 0).any()]
                              for choices_prob_instance, choices_ids_instance in zip(choices_prob, choices_ids)]
         self.write_prediction("choices_prob", choices_prob_list)  # noqa
+
+        generated_output = self.t5_pretrained_model.generate(text_ids, attention_mask=text_attention_mask,
+                                                             **self.generate_kwargs, **kwargs)
+
+        generated_ids = generated_output.sequences
+        generated = self.tokenizer.batch_decode(
+            compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
+                                self.extra_id_0, self.extra_id_1))
+
+        a = 1
 
         # perplexity_mask = ((choices_ids != self.t5_pretrained_model.config.pad_token_id)
         #                    & (choices_ids != self.t5_pretrained_model.config.eos_token_id))

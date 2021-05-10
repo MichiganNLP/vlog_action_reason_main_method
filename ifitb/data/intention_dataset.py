@@ -17,7 +17,7 @@ TYPE_BATCH = MutableMapping[str, Any]
 
 
 class IntentionDataset(Dataset):
-    def __init__(self, reasons_by_verb_path: str, data_path: str, tokenizer: Optional[PreTrainedTokenizerBase] = None,
+    def __init__(self, data_path: str, tokenizer: Optional[PreTrainedTokenizerBase] = None,
                  t5_format: bool = True, output_visual: bool = True) -> None:
         super().__init__()
 
@@ -25,29 +25,25 @@ class IntentionDataset(Dataset):
         self.t5_format = t5_format
         self.output_visual = output_visual
 
-        with open(cached_path(reasons_by_verb_path)) as file:
-            choices_by_action = json.load(file)
-
         with open(cached_path(data_path)) as file:
             instances_by_action = json.load(file)
 
         self.instances = []
         for action, instances in instances_by_action.items():
             for instance in instances:
-                if choices := choices_by_action.get(action):  # FIXME: there are some missing verbs (e.g., "accomplish")
-                    verb_end_position = next(RE_WORD_BOUNDARY.finditer(instance["sentence"],
-                                                                       instance["verb_pos_sentence"] + 1)).end()
-                    # TODO: think of a better template?
-                    text = (f"{instance['sentence_before']} {instance['sentence'][:verb_end_position]}"
-                            f" because _____{instance['sentence'][verb_end_position:]} {instance['sentence_after']}")
-                    self.instances.append({
-                        "text": text,
-                        "video_id": instance["video"],
-                        "video_start_time": instance["time_s"],
-                        "video_end_time": instance["time_e"],
-                        "choices": choices,
-                        # TODO: gt
-                    })
+                verb_end_position = next(RE_WORD_BOUNDARY.finditer(instance["sentence"],
+                                                                   instance["verb_pos_sentence"] + 1)).end()
+                # TODO: think of a better template?
+                text = (f"{instance['sentence_before']} {instance['sentence'][:verb_end_position]}"
+                        f" because _____{instance['sentence'][verb_end_position:]} {instance['sentence_after']}")
+                self.instances.append({
+                    "text": text,
+                    "video_id": instance["video"],
+                    "video_start_time": instance["time_s"],
+                    "video_end_time": instance["time_e"],
+                    "choices": instance["reasons"],
+                    "ground_truth": instance["answers"],
+                })
 
     def __getitem__(self, i: int) -> Mapping[str, Any]:
         # TODO: output visual

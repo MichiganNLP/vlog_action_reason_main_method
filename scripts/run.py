@@ -8,7 +8,7 @@ import torch
 from pytorch_lightning.trainer.connectors.profiler_connector import PROFILERS
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-from ifitb.data.data_module import IntentionFitbDataModule, URL_INTENTIONS_DATA, URL_REASONS_BY_VERB
+from ifitb.data.data_module import IntentionFitbDataModule, URL_INTENTIONS_TEST, URL_INTENTIONS_TRAIN
 from ifitb.model.t5_filler_model import T5FillerModel
 from ifitb.model.t5_visual_module import T5AndVisual
 from ifitb.util.argparse_with_defaults import ArgumentParserWithDefaults
@@ -17,8 +17,8 @@ from ifitb.util.argparse_with_defaults import ArgumentParserWithDefaults
 def _parse_args() -> argparse.Namespace:
     parser = ArgumentParserWithDefaults()
 
-    parser.add_argument("--reasons-by-verb-path", default=URL_REASONS_BY_VERB)
-    parser.add_argument("--intentions-data-path", default=URL_INTENTIONS_DATA)
+    parser.add_argument("--intentions-train-path", default=URL_INTENTIONS_TRAIN)
+    parser.add_argument("--intentions-test-path", default=URL_INTENTIONS_TEST)
     # parser.add_argument("--visual-data-dir", default="...")  # TODO
 
     parser.add_argument("--batch-size", type=int, default=32)
@@ -92,8 +92,8 @@ def main() -> None:
 
     data_module = IntentionFitbDataModule(tokenizer=tokenizer, batch_size=args.batch_size, num_workers=args.num_workers,
                                           output_visual=not args.text_only,
-                                          reasons_by_verb_path=args.reasons_by_verb_path,
-                                          intentions_data_path=args.intentions_data_path)
+                                          intentions_train_path=args.intentions_train_path,
+                                          intentions_test_path=args.intentions_test_path)
 
     if args.train:
         trainer.fit(filler, datamodule=data_module)
