@@ -150,15 +150,15 @@ class T5FillerModel(pl.LightningModule):
                              for choices_prob_instance, choices_ids_instance in zip(choices_prob, choices_ids)]
         self.write_prediction("choices_prob", choices_prob_list)  # noqa
 
-        generated_output = self.t5_pretrained_model.generate(text_ids, attention_mask=text_attention_mask,
-                                                             **self.generate_kwargs, **kwargs)
-
-        generated_ids = generated_output.sequences
-        generated = self.tokenizer.batch_decode(
-            compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
-                                self.extra_id_0, self.extra_id_1))
-
-        a = 1
+        # generated_output = self.t5_pretrained_model.generate(text_ids, attention_mask=text_attention_mask,  # noqa
+        #                                                      **self.generate_kwargs, **kwargs)
+        #
+        # generated_ids = generated_output.sequences
+        # generated = self.tokenizer.batch_decode(
+        #     compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
+        #                         self.extra_id_0, self.extra_id_1))
+        #
+        # a = 1
 
         # perplexity_mask = ((choices_ids != self.t5_pretrained_model.config.pad_token_id)
         #                    & (choices_ids != self.t5_pretrained_model.config.eos_token_id))
