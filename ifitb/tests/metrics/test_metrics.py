@@ -1,11 +1,11 @@
 from unittest import TestCase
 
-from ifitb.metrics.metrics import AccuracyPerAction
+from ifitb.metrics.metrics import AllMetrics
 
 
-class TestAccuracyPerAction(TestCase):
-    def test_accuracy_per_action(self):
-        metric = AccuracyPerAction()
+class TestAllMetrics(TestCase):
+    def test_all_metrics(self):
+        metric = AllMetrics()
 
         metric.update([["dirty"], ["fitness", "is fun!"]],
                       [["guests are coming"], ["fitness"]],
@@ -17,4 +17,10 @@ class TestAccuracyPerAction(TestCase):
                       ["clean"],
                       [["dirty", "guests are coming", "tidy"]])
 
-        self.assertAlmostEqual(((1 / 3 + 1 / 3) / 2 + 1 / 2) / 2, metric.compute().item())
+        expected = {"accuracy": ((1 / 3 + 1 / 3) / 2 + 1 / 2) / 2}
+        actual = metric.compute()
+
+        self.assertEqual(set(expected), set(actual))
+
+        for k in expected:
+            self.assertAlmostEqual(expected[k], actual[k].item())

@@ -49,9 +49,8 @@ class AllMetrics(Metric):
         for metric in self.metrics.values():
             metric.reset()
 
-    # def __call__(self, video_ids: Sequence[str], labels: Sequence[str],
-    #              additional_answers_batch: Sequence[Sequence[Sequence[str]]], preds: Sequence[str],
-    #              label_prob: Optional[torch.Tensor] = None, label_probs: Optional[torch.Tensor] = None,
+    # def __call__(self, video_ids: Sequence[str], label_prob: Optional[torch.Tensor] = None,
+    #              label_probs: Optional[torch.Tensor] = None,
     #              perplexity_mask: Optional[torch.Tensor] = None) -> Mapping[str, torch.Tensor]:
     @overrides
     def update(self, preds: Iterator[Sequence[str]], targets: Iterator[Sequence[str]], verbs: Iterator[str],
