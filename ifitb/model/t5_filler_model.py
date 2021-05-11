@@ -7,12 +7,12 @@ from overrides import overrides
 from pytorch_lightning.utilities.parsing import get_init_args
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler  # noqa
-from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, \
-    get_linear_schedule_with_warmup
+from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, get_linear_schedule_with_warmup
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 from ifitb.data.fitb_dataset import TYPE_BATCH as TYPE_FITB_BATCH
 from ifitb.data.intention_dataset import TYPE_BATCH as TYPE_INTENTION_BATCH
+from ifitb.metrics.accuracy import AccuracyPerAction
 from ifitb.model.decoding import compute_label_normalized_logits, compute_label_prob
 
 
@@ -42,7 +42,9 @@ class T5FillerModel(pl.LightningModule):
 
         self.tokenizer = tokenizer
 
-        # self.metrics = ...  # TODO
+        self.threshold = 1e-10  # TODO
+
+        self.accuracy = AccuracyPerAction()
 
         self.generate_kwargs = {}
 
@@ -54,8 +56,7 @@ class T5FillerModel(pl.LightningModule):
 
     @overrides
     def on_epoch_start(self) -> None:
-        # self.all_metrics.reset()
-        pass
+        self.accuracy.reset()
 
     @overrides
     def forward(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None,
@@ -97,10 +98,10 @@ class T5FillerModel(pl.LightningModule):
         return loss
 
     def _eval_step(self, text_ids: torch.Tensor, text_attention_mask: torch.Tensor,
-                   choices_ids: torch.Tensor, text: Sequence[str], choices: Sequence[Sequence[str]],
-                   ground_truth: Sequence[Sequence[str]], video_id: Optional[Sequence[str]],
-                   video_start_time: Optional[Sequence[str]], video_end_time: Optional[Sequence[str]],
-                   log_prefix: str = "", **kwargs) -> None:
+                   choices_ids: torch.Tensor, text: Sequence[str], verb: Sequence[str],
+                   choices: Sequence[Sequence[str]], ground_truth: Sequence[Sequence[str]],
+                   video_id: Optional[Sequence[str]], video_start_time: Optional[Sequence[str]],
+                   video_end_time: Optional[Sequence[str]], log_prefix: str = "", **kwargs) -> None:
         self.write_prediction("video_id", video_id)  # noqa
         self.write_prediction("video_start_time", video_start_time)  # noqa
         self.write_prediction("video_end_time", video_end_time)  # noqa
@@ -158,13 +159,12 @@ class T5FillerModel(pl.LightningModule):
         #     compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
         #                         self.extra_id_0, self.extra_id_1))
 
-        # perplexity_mask = ((choices_ids != self.t5_pretrained_model.config.pad_token_id)
-        #                    & (choices_ids != self.t5_pretrained_model.config.eos_token_id))
+        predicted = [[choice for choice, prob in zip(verb_choices, verb_choices_prob_list) if prob > self.threshold]
+                     for verb_choices, verb_choices_prob_list in zip(choices, choices_prob_list)]
+        self.write_prediction("predicted", predicted)  # noqa
 
-        # for k, v in self.all_metrics(video_id, label, additional_answers, generated, label_prob,  # TODO
-        #                              label_probs, perplexity_mask).items():  # noqa
-        #     if k in {"accuracy", "f1_score", "ground_truth_prob", "perplexity"}:
-        #         self.log(f"{log_prefix}{k}_step", v, prog_bar=True)
+        accuracy = self.accuracy(predicted, ground_truth, verb, choices)
+        self.log(f"{log_prefix}accuracy_step", accuracy, prog_bar=True)
 
     @overrides
     def validation_step(self, batch: TYPE_INTENTION_BATCH, batch_idx: int = 0) -> None:
@@ -175,9 +175,7 @@ class T5FillerModel(pl.LightningModule):
         self._eval_step(**batch, log_prefix="test_")
 
     def _on_epoch_end(self, log_prefix: str = "") -> None:
-        # for k, v in self.all_metrics.compute().items():  # TODO
-        #     self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1_score", "ground_truth_prob"})
-        pass
+        self.log(f"{log_prefix}accuracy", self.accuracy.compute(), prog_bar=True)
 
     def on_validation_epoch_end(self) -> None:
         self._on_epoch_end(log_prefix="val_")

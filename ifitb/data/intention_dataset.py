@@ -41,6 +41,7 @@ class IntentionDataset(Dataset):
                     "video_id": instance["video"],
                     "video_start_time": instance["time_s"],
                     "video_end_time": instance["time_e"],
+                    "verb": action,
                     "choices": instance["reasons"],
                     "ground_truth": instance["answers"],
                 })

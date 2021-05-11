@@ -15,6 +15,7 @@ class TestIntentionDataset(TestCase):
             "video_id": "EphWUUqxbck",
             "video_start_time": "0:00:04.400000",
             "video_end_time": "0:00:27.119000",
+            "verb": "clean",
             "choices": ["company was coming", "do not like dirtiness", "habit", "self care", "declutter", "remove dirt",
                         "I cannot find any reason mentioned verbally or shown visually in the video"],
             "ground_truth": ["declutter", "remove dirt"],
