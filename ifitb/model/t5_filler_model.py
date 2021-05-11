@@ -44,7 +44,7 @@ class T5FillerModel(pl.LightningModule):
 
         self.threshold = 1e-10  # TODO
 
-        self.all_metrics = AllMetrics()
+        self.all_metrics = AllMetrics(threshold=self.threshold)
 
         self.generate_kwargs = {}
 
@@ -159,13 +159,13 @@ class T5FillerModel(pl.LightningModule):
         #     compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
         #                         self.extra_id_0, self.extra_id_1))
 
+        for k, v in self.all_metrics(choices_prob_list, ground_truth, verb, choices).items():  # noqa
+            if k in {"accuracy", "f1", "ground_truth_prob", "perplexity"}:
+                self.log(f"{log_prefix}{k}_step", v, prog_bar=True)
+
         predicted = [[choice for choice, prob in zip(verb_choices, verb_choices_prob_list) if prob > self.threshold]
                      for verb_choices, verb_choices_prob_list in zip(choices, choices_prob_list)]
         self.write_prediction("predicted", predicted)  # noqa
-
-        for k, v in self.all_metrics(predicted, ground_truth, verb, choices).items():  # noqa
-            if k in {"accuracy", "f1_score", "ground_truth_prob", "perplexity"}:
-                self.log(f"{log_prefix}{k}_step", v, prog_bar=True)
 
     @overrides
     def validation_step(self, batch: TYPE_INTENTION_BATCH, batch_idx: int = 0) -> None:
@@ -177,7 +177,7 @@ class T5FillerModel(pl.LightningModule):
 
     def _on_epoch_end(self, log_prefix: str = "") -> None:
         for k, v in self.all_metrics.compute().items():
-            self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1_score", "ground_truth_prob"})
+            self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1", "ground_truth_prob"})
 
     def on_validation_epoch_end(self) -> None:
         self._on_epoch_end(log_prefix="val_")
