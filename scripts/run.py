@@ -51,7 +51,6 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--trainer-default-root-dir")
 
     parser.add_argument("--train", action="store_true")
-    # parser.add_argument("--test", action="store_true")  # TODO: to use test set
     parser.add_argument("--fast-dev-run", action="store_true")
     parser.add_argument("--profiler", choices=PROFILERS)
     parser.add_argument("--epochs", default=10, type=int)

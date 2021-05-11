@@ -1,10 +1,8 @@
-import inspect
 from typing import Iterable, Literal, Optional, Sequence, Tuple, Union
 
 import pytorch_lightning as pl
 import torch
 from overrides import overrides
-from pytorch_lightning.utilities.parsing import get_init_args
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler  # noqa
 from transformers import AdamW, PreTrainedModel, PreTrainedTokenizerBase, get_linear_schedule_with_warmup
@@ -25,12 +23,8 @@ class T5FillerModel(pl.LightningModule):
                  lr_scheduler: Optional[Literal["linear_with_warmup"]] = "linear_with_warmup") -> None:  # noqa
         super().__init__()
 
-        frame = inspect.currentframe()
-        init_args = get_init_args(frame)
-        # The following 2 are too large to serialize:
-        del init_args["t5_like_pretrained_model"]
-        del init_args["tokenizer"]
-        self.save_hyperparameters(init_args)
+        # These 2 args are too large to serialize.
+        self.save_hyperparameters(ignore=["t5_like_pretrained_model", "tokenizer"])
 
         # The model doesn't necessarily use T5 classes (e.g., `T5PreTrainedModel`).
         # It just needs to be pretrained like T5 and support conditional generation.
@@ -42,9 +36,10 @@ class T5FillerModel(pl.LightningModule):
 
         self.tokenizer = tokenizer
 
-        self.threshold = 1e-10  # TODO
+        self.threshold = torch.tensor(1e-10)  # TODO
 
-        self.all_metrics = AllMetrics(threshold=self.threshold)
+        # TODO: check that the metric threshold changes when the parameter one does.
+        self.all_metrics = AllMetrics(threshold=self.threshold)  # noqa
 
         self.generate_kwargs = {}
 
