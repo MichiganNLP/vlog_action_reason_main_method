@@ -14,7 +14,6 @@ from transformers.modeling_outputs import Seq2SeqLMOutput
 from ifitb.data.fitb_dataset import TYPE_BATCH as TYPE_FITB_BATCH
 from ifitb.data.intention_dataset import TYPE_BATCH as TYPE_INTENTION_BATCH
 from ifitb.model.decoding import compute_label_normalized_logits, compute_label_prob
-from ifitb.model.t5_format_processing import compute_first_blank
 
 
 class T5FillerModel(pl.LightningModule):
@@ -99,8 +98,9 @@ class T5FillerModel(pl.LightningModule):
 
     def _eval_step(self, text_ids: torch.Tensor, text_attention_mask: torch.Tensor,
                    choices_ids: torch.Tensor, text: Sequence[str], choices: Sequence[Sequence[str]],
-                   video_id: Optional[Sequence[str]], video_start_time: Optional[Sequence[str]],
-                   video_end_time: Optional[Sequence[str]], log_prefix: str = "", **kwargs) -> None:
+                   ground_truth: Sequence[Sequence[str]], video_id: Optional[Sequence[str]],
+                   video_start_time: Optional[Sequence[str]], video_end_time: Optional[Sequence[str]],
+                   log_prefix: str = "", **kwargs) -> None:
         self.write_prediction("video_id", video_id)  # noqa
         self.write_prediction("video_start_time", video_start_time)  # noqa
         self.write_prediction("video_end_time", video_end_time)  # noqa
@@ -157,8 +157,6 @@ class T5FillerModel(pl.LightningModule):
         # generated = self.tokenizer.batch_decode(
         #     compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
         #                         self.extra_id_0, self.extra_id_1))
-        #
-        # a = 1
 
         # perplexity_mask = ((choices_ids != self.t5_pretrained_model.config.pad_token_id)
         #                    & (choices_ids != self.t5_pretrained_model.config.eos_token_id))
