@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from ifitb.metrics.accuracy import AccuracyPerAction
+from ifitb.metrics.metrics import AccuracyPerAction
 
 
 class TestAccuracyPerAction(TestCase):
@@ -17,4 +17,4 @@ class TestAccuracyPerAction(TestCase):
                       ["clean"],
                       [["dirty", "guests are coming", "tidy"]])
 
-        self.assertAlmostEqual((2 / 6 + 1 / 2) / 2, metric.compute().item())
+        self.assertAlmostEqual(((1 / 3 + 1 / 3) / 2 + 1 / 2) / 2, metric.compute().item())

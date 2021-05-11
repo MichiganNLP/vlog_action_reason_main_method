@@ -12,7 +12,7 @@ from transformers.modeling_outputs import Seq2SeqLMOutput
 
 from ifitb.data.fitb_dataset import TYPE_BATCH as TYPE_FITB_BATCH
 from ifitb.data.intention_dataset import TYPE_BATCH as TYPE_INTENTION_BATCH
-from ifitb.metrics.accuracy import AccuracyPerAction
+from ifitb.metrics.metrics import AllMetrics
 from ifitb.model.decoding import compute_label_normalized_logits, compute_label_prob
 
 
@@ -44,7 +44,7 @@ class T5FillerModel(pl.LightningModule):
 
         self.threshold = 1e-10  # TODO
 
-        self.accuracy = AccuracyPerAction()
+        self.all_metrics = AllMetrics()
 
         self.generate_kwargs = {}
 
@@ -56,7 +56,7 @@ class T5FillerModel(pl.LightningModule):
 
     @overrides
     def on_epoch_start(self) -> None:
-        self.accuracy.reset()
+        self.all_metrics.reset()
 
     @overrides
     def forward(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None,
@@ -163,8 +163,9 @@ class T5FillerModel(pl.LightningModule):
                      for verb_choices, verb_choices_prob_list in zip(choices, choices_prob_list)]
         self.write_prediction("predicted", predicted)  # noqa
 
-        accuracy = self.accuracy(predicted, ground_truth, verb, choices)
-        self.log(f"{log_prefix}accuracy_step", accuracy, prog_bar=True)
+        for k, v in self.all_metrics(predicted, ground_truth, verb, choices).items():  # noqa
+            if k in {"accuracy", "f1_score", "ground_truth_prob", "perplexity"}:
+                self.log(f"{log_prefix}{k}_step", v, prog_bar=True)
 
     @overrides
     def validation_step(self, batch: TYPE_INTENTION_BATCH, batch_idx: int = 0) -> None:
@@ -175,7 +176,8 @@ class T5FillerModel(pl.LightningModule):
         self._eval_step(**batch, log_prefix="test_")
 
     def _on_epoch_end(self, log_prefix: str = "") -> None:
-        self.log(f"{log_prefix}accuracy", self.accuracy.compute(), prog_bar=True)
+        for k, v in self.all_metrics.compute().items():
+            self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1_score", "ground_truth_prob"})
 
     def on_validation_epoch_end(self) -> None:
         self._on_epoch_end(log_prefix="val_")
