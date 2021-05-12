@@ -11,7 +11,7 @@ dependencies:
     # See https://github.com/huggingface/tokenizers/issues/585
     # There are some non-popular glibc packages available in Anaconda, but Python needs to be linked to it as well.
     # This is cumbersome, so we just use pip.
-    - transformers==4.5.1
+    - transformers==4.6.0
   - boto3=1.17.46  # For `cached_path`.
   - botocore=1.20.50  # For `cached_path`.
   - conda-forge::cudatoolkit=11.1.1
