@@ -6,7 +6,7 @@ from ifitb.data.intention_dataset import IntentionDataset
 
 class TestIntentionDataset(TestCase):
     def test_dataset_format(self):
-        dataset = IntentionDataset(URL_INTENTIONS_TEST)
+        dataset = IntentionDataset(URL_INTENTIONS_TEST, output_visual=False)
         expected_first_item = {
             "text": "hey everyone welcome back to my channel so as promised i said i would do some weekend reset"
                     " videos my last one was pretty much completely cleaning because _____ because that weekend i"
