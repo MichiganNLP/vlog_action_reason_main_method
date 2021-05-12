@@ -10,7 +10,7 @@ from pytorch_lightning.trainer.connectors.profiler_connector import PROFILERS
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from ifitb.data.data_module import IntentionFitbDataModule, URL_INTENTIONS_TEST, URL_INTENTIONS_TRAIN, \
-    URL_VISUAL_FEATURES
+    URL_INTENTIONS_VAL, URL_VISUAL_FEATURES
 from ifitb.model.t5_filler_model import T5FillerModel
 from ifitb.model.t5_visual_module import T5AndVisual
 from ifitb.util.argparse_with_defaults import ArgumentParserWithDefaults
@@ -20,6 +20,7 @@ def _parse_args() -> argparse.Namespace:
     parser = ArgumentParserWithDefaults()
 
     parser.add_argument("--intentions-train-path", default=URL_INTENTIONS_TRAIN)
+    parser.add_argument("--intentions-val-path", default=URL_INTENTIONS_VAL)
     parser.add_argument("--intentions-test-path", default=URL_INTENTIONS_TEST)
     parser.add_argument("--visual-data-dir", default=URL_VISUAL_FEATURES)
 
@@ -54,6 +55,8 @@ def _parse_args() -> argparse.Namespace:
 
     parser.add_argument("--fitb-train", action="store_true")
     parser.add_argument("--train", action="store_true")
+    parser.add_argument("--use-test-set", action="store_true")
+
     parser.add_argument("--fast-dev-run", action="store_true")
     parser.add_argument("--profiler", choices=PROFILERS)
     parser.add_argument("--epochs", default=10, type=int)
@@ -104,6 +107,7 @@ def main() -> None:
     data_module = IntentionFitbDataModule(tokenizer=tokenizer, batch_size=args.batch_size, num_workers=args.num_workers,
                                           output_visual=not args.text_only,
                                           intentions_train_path=args.intentions_train_path,
+                                          intentions_val_path=args.intentions_val_path,
                                           intentions_test_path=args.intentions_test_path,
                                           visual_data_path=args.visual_data_dir)
 
@@ -116,7 +120,10 @@ def main() -> None:
         print("Training with labeled data started")
         trainer.fit(filler, datamodule=data_module)
 
-    trainer.test(filler, datamodule=data_module)
+    if args.use_test_set:
+        trainer.test(filler, datamodule=data_module)
+    else:
+        trainer.validate(filler, datamodule=data_module)
 
     predictions = {k: v.tolist() if isinstance(v, torch.Tensor) else v
                    for k, v in next(iter(trainer.evaluation_loop.predictions.predictions.values())).items()}

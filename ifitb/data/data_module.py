@@ -11,7 +11,8 @@ from ifitb.data.intention_dataset import IntentionDataset
 URL_FITB_DATA = "https://www.dropbox.com/s/93wt5jexgudducu/dict_sentences_per_verb_all_MARKERS.json?dl=1"
 # TODO: make sure we don't use test data in FITB.
 
-URL_INTENTIONS_TRAIN = "https://www.dropbox.com/s/tqjtsp72ut2v9rd/dict_web_trial_train_santi.json?dl=1"
+URL_INTENTIONS_TRAIN = "https://www.dropbox.com/s/l83uqlw0o25g37w/train.json?dl=1"
+URL_INTENTIONS_VAL = "https://www.dropbox.com/s/w2ezhwamu3mjvmh/val.json?dl=1"
 URL_INTENTIONS_TEST = "https://www.dropbox.com/s/4h78b71294r6fws/dict_web_trial_test_santi.json?dl=1"
 
 URL_VISUAL_FEATURES = "https://www.dropbox.com/s/k4zjwcdz4lksv0j/i3d_video_features.tar.gz?dl=1!i3d_video_features"
@@ -21,7 +22,7 @@ class IntentionFitbDataModule(pl.LightningDataModule):  # noqa
     def __init__(self, tokenizer: Optional[PreTrainedTokenizerBase] = None, batch_size: Optional[int] = 32,
                  eval_batch_size: Optional[int] = None, num_workers: int = 0, t5_format: bool = True,
                  output_visual: bool = True, fitb_data_path: str = URL_FITB_DATA,
-                 intentions_train_path: str = URL_INTENTIONS_TRAIN,
+                 intentions_train_path: str = URL_INTENTIONS_TRAIN, intentions_val_path: str = URL_INTENTIONS_VAL,
                  intentions_test_path: str = URL_INTENTIONS_TEST, visual_data_path: str = URL_VISUAL_FEATURES) -> None:
         super().__init__()
         self.tokenizer = tokenizer
@@ -36,6 +37,7 @@ class IntentionFitbDataModule(pl.LightningDataModule):  # noqa
         self.fitb_data_path = fitb_data_path
 
         self.intentions_train_path = intentions_train_path
+        self.intentions_val_path = intentions_val_path
         self.intentions_test_path = intentions_test_path
 
         self.visual_data_path = visual_data_path
@@ -59,8 +61,7 @@ class IntentionFitbDataModule(pl.LightningDataModule):  # noqa
 
     @overrides
     def val_dataloader(self) -> DataLoader:
-        # FIXME: divide into val and test
-        return self._dataloader(self.intentions_test_path, batch_size=self.eval_batch_size, train=False)
+        return self._dataloader(self.intentions_val_path, batch_size=self.eval_batch_size, train=False)
 
     @overrides
     def test_dataloader(self) -> DataLoader:
