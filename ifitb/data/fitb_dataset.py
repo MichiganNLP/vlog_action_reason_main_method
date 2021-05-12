@@ -62,7 +62,7 @@ class FitbDataset(Dataset):
     def __getitem__(self, i: int) -> Mapping[str, Any]:
         instance = self.instances[i]
 
-        if "visual" not in instance:
+        if self.output_visual and "visual" not in instance:
             instance["visual"] = get_video_features(self.visual_data_path, instance["video_id"],
                                                     instance["video_start_time"], instance["video_end_time"])
 
