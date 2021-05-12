@@ -22,7 +22,7 @@ from ifitb.util.file_utils import cached_path
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-warnings.filterwarnings("ignore", message=r"The pts_unit 'pts' .+")  # TODO: change `VideoClips`.
+warnings.filterwarnings("ignore", message=r"The pts_unit 'pts' .+")
 warnings.filterwarnings("ignore", message=r"There aren't enough frames in the current video .+")
 
 
@@ -46,8 +46,7 @@ class VideoDataset(Dataset):
             torchvision.transforms.CenterCrop(224),
         ])
 
-        video_paths = [os.path.join(os.path.dirname(video_folder_path), filename)
-                       for filename in os.listdir(video_folder_path)]
+        video_paths = [os.path.join(video_folder_path, filename) for filename in os.listdir(video_folder_path)]
 
         self.video_clips = VideoClips(video_paths, clip_length_in_frames=clip_length_in_frames,
                                       frames_between_clips=frames_between_clips, frame_rate=frame_rate,
