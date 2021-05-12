@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Callable, Iterator, Mapping, MutableMapping, Sequence
+from typing import Any, Callable, Iterator, Mapping, MutableMapping, Optional, Sequence
 
 import torch
 from overrides import overrides
@@ -15,7 +15,7 @@ class MetricPerAction(Metric):
 
     @overrides
     def update(self, preds: Iterator[Sequence[float]], targets: Iterator[Sequence[str]], verbs: Iterator[str],
-               choices: Iterator[Sequence[str]]) -> None:
+               choices: Iterator[Sequence[str]], device: Optional[Any] = None) -> None:
         for pred, target, verb, verb_choices in zip(preds, targets, verbs, choices):
             if binarizer := self.binarizer_by_verb.get(verb):
                 assert binarizer.classes == verb_choices, (f"The intention choices for an instance of the verb '{verb}'"
@@ -26,6 +26,10 @@ class MetricPerAction(Metric):
 
             pred = torch.tensor(pred).unsqueeze(0)
             encoded_target = torch.from_numpy(binarizer.transform([target]))
+
+            if device is not None:
+                pred = pred.to(device)
+                encoded_target = encoded_target.to(device)
 
             self.metric_by_verb[verb].update(pred, encoded_target)
 
@@ -58,9 +62,9 @@ class AllMetrics(Metric):
     #              perplexity_mask: Optional[torch.Tensor] = None) -> Mapping[str, torch.Tensor]:
     @overrides
     def update(self, preds: Iterator[Sequence[float]], targets: Iterator[Sequence[str]], verbs: Iterator[str],
-               choices: Iterator[Sequence[str]]) -> None:
+               choices: Iterator[Sequence[str]], device: Optional[Any] = None) -> None:
         for metric in self.metrics.values():
-            metric.update(preds, targets, verbs, choices)
+            metric.update(preds, targets, verbs, choices, device=device)
 
         # if ground_truth_prob_metric := self.metrics.get("ground_truth_prob"):
         #     assert label_prob is not None

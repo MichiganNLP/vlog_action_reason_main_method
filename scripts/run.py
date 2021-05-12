@@ -52,6 +52,7 @@ def _parse_args() -> argparse.Namespace:
 
     parser.add_argument("--trainer-default-root-dir")
 
+    parser.add_argument("--fitb-train", action="store_true")
     parser.add_argument("--train", action="store_true")
     parser.add_argument("--fast-dev-run", action="store_true")
     parser.add_argument("--profiler", choices=PROFILERS)
@@ -106,7 +107,13 @@ def main() -> None:
                                           intentions_test_path=args.intentions_test_path,
                                           visual_data_path=args.visual_data_dir)
 
+    if args.fitb_train:
+        print("FITB training started")
+        trainer.fit(filler, train_dataloader=data_module.fitb_dataloader(),
+                    val_dataloaders=data_module.val_dataloader())
+
     if args.train:
+        print("Training with labeled data started")
         trainer.fit(filler, datamodule=data_module)
 
     trainer.test(filler, datamodule=data_module)

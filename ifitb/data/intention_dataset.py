@@ -65,13 +65,13 @@ class IntentionDataset(Dataset):
         keys = next(iter(instances), {})
         batch = {k: [instance[k] for instance in instances] for k in keys}
 
-        for k in ["text", "choices"]:
+        for k in ["text", "choices", "ground_truth"]:
             stack = batch[k]
 
             if self.tokenizer:
                 counts = None
                 if self.t5_format:
-                    if k == "choices":
+                    if k in {"choices", "ground_truth"}:
                         counts = [len(choices) for choices in stack]
                         to_tokenize = [f"<extra_id_0> {c} <extra_id_1>" for choices in stack for c in choices]
                     elif k == "text":
@@ -93,7 +93,7 @@ class IntentionDataset(Dataset):
                     tensor_iter = iter(tokenization_output["input_ids"])
                     tensor_list = [torch.stack(list(itertools.islice(tensor_iter, count))) for count in counts]
                     batch[f"{k}_ids"] = pad_sequence(tensor_list, batch_first=True)
-                    # We don't use the attention mask for the choices, so we don't compute it.
+                    # We don't use the attention mask in this case. So we don't compute it.
                 else:
                     batch[f"{k}_ids"] = tokenization_output["input_ids"]
                     batch[f"{k}_attention_mask"] = tokenization_output["attention_mask"]

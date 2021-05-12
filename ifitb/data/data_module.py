@@ -35,30 +35,33 @@ class IntentionFitbDataModule(pl.LightningDataModule):  # noqa
 
         self.fitb_data_path = fitb_data_path
 
-        self.intentions_train_path = intentions_train_path  # Unused for now.
+        self.intentions_train_path = intentions_train_path
         self.intentions_test_path = intentions_test_path
 
         self.visual_data_path = visual_data_path
 
-    @overrides
-    def train_dataloader(self) -> DataLoader:
+    def fitb_dataloader(self) -> DataLoader:
         dataset = FitbDataset(self.fitb_data_path, self.tokenizer, t5_format=self.t5_format,
                               output_visual=self.output_visual, visual_data_path=self.visual_data_path)
         # TODO: bucket-batching could make training faster, and consume less memory.
         return DataLoader(dataset, shuffle=True, batch_size=self.batch_size, num_workers=self.num_workers,
                           pin_memory=True, collate_fn=None if self.eval_batch_size is None else dataset.collate_fn)
 
-    def _eval_dataloader(self) -> DataLoader:
-        dataset = IntentionDataset(self.intentions_test_path, self.tokenizer, t5_format=self.t5_format,
+    def _dataloader(self, data_path: str, batch_size: int, train: bool) -> DataLoader:
+        dataset = IntentionDataset(data_path, self.tokenizer, t5_format=self.t5_format,
                                    output_visual=self.output_visual, visual_data_path=self.visual_data_path)
-        # FIXME: divide into val and test
-        return DataLoader(dataset, batch_size=self.eval_batch_size, num_workers=self.num_workers, pin_memory=True,
-                          collate_fn=None if self.eval_batch_size is None else dataset.collate_fn)
+        return DataLoader(dataset, shuffle=train, batch_size=batch_size, num_workers=self.num_workers,
+                          pin_memory=True, collate_fn=None if batch_size is None else dataset.collate_fn)
+
+    @overrides
+    def train_dataloader(self) -> DataLoader:
+        return self._dataloader(self.intentions_train_path, batch_size=self.batch_size, train=True)
 
     @overrides
     def val_dataloader(self) -> DataLoader:
-        return self._eval_dataloader()
+        # FIXME: divide into val and test
+        return self._dataloader(self.intentions_test_path, batch_size=self.eval_batch_size, train=False)
 
     @overrides
     def test_dataloader(self) -> DataLoader:
-        return self._eval_dataloader()
+        return self._dataloader(self.intentions_test_path, batch_size=self.eval_batch_size, train=False)

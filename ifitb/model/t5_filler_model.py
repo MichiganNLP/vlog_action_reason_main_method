@@ -36,9 +36,9 @@ class T5FillerModel(pl.LightningModule):
 
         self.tokenizer = tokenizer
 
-        self.threshold = torch.tensor(1e-10)  # TODO
+        self.threshold = torch.nn.Parameter(torch.tensor(1e-10))
 
-        # TODO: check that the metric threshold changes when the parameter one does.
+        # TODO: make sure the metric threshold changes when the parameter one does.
         self.all_metrics = AllMetrics(threshold=self.threshold)  # noqa
 
         self.generate_kwargs = {}
@@ -77,16 +77,38 @@ class T5FillerModel(pl.LightningModule):
         return output
 
     def training_step(self, batch: TYPE_FITB_BATCH, batch_idx: int = 0) -> torch.Tensor:
-        input_ids = batch.pop("text_with_blanks_ids")
-        input_attention_mask = batch.pop("text_with_blanks_attention_mask", None)
-        label_ids = batch.pop("label_ids")
+        if "text_with_blanks_ids" in batch:  # FITB training
+            input_ids = batch.pop("text_with_blanks_ids")
+            input_attention_mask = batch.pop("text_with_blanks_attention_mask", None)
+            label_ids = batch.pop("label_ids")
 
-        del batch["video_id"]
-        del batch["video_start_time"]
-        del batch["video_end_time"]
-        del batch["text_with_blanks"]
-        del batch["label"]
-        del batch["label_attention_mask"]
+            del batch["video_id"]
+            del batch["video_start_time"]
+            del batch["video_end_time"]
+            del batch["text_with_blanks"]
+            del batch["label"]
+            del batch["label_attention_mask"]
+        else:  # Training with labeled data.
+            input_ids = batch.pop("text_ids")
+            input_attention_mask = batch.pop("text_attention_mask", None)
+
+            ground_truth_ids = batch.pop("ground_truth_ids")
+            selected_ground_truth_id_list = []
+            for ground_truth_ids_instance in ground_truth_ids:
+                # Randomly select one ground truth option, supposing there's one.
+                ground_truth_size = sum(1 for g in ground_truth_ids_instance if g.any())
+                i = torch.randint(ground_truth_size, ()).item()
+                selected_ground_truth_id_list.append(ground_truth_ids_instance[i])
+            label_ids = torch.stack(selected_ground_truth_id_list)
+
+            del batch["text"]
+            del batch["video_id"]
+            del batch["video_start_time"]
+            del batch["video_end_time"]
+            del batch["verb"]
+            del batch["choices"]
+            del batch["choices_ids"]
+            del batch["ground_truth"]
 
         loss = self(input_ids, input_attention_mask, label_ids, revert_changes_to_label_ids=False, **batch)["loss"]
         self.log("loss", loss)
@@ -102,6 +124,8 @@ class T5FillerModel(pl.LightningModule):
         self.write_prediction("video_end_time", video_end_time)  # noqa
         self.write_prediction("text", text)  # noqa
         self.write_prediction("choices", choices)  # noqa
+
+        del kwargs["ground_truth_ids"]
 
         # Encode the input only once, then reuse for the choices.
         kwargs = self.t5_pretrained_model._prepare_encoder_decoder_kwargs_for_generation(
@@ -151,7 +175,8 @@ class T5FillerModel(pl.LightningModule):
         #     compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
         #                         self.extra_id_0, self.extra_id_1))
 
-        for k, v in self.all_metrics(choices_prob_list, ground_truth, verb, choices).items():  # noqa
+        for k, v in self.all_metrics(choices_prob_list, ground_truth, verb, choices,
+                                     device=next(self.parameters()).device).items():  # noqa
             if k in {"accuracy", "f1", "ground_truth_prob", "perplexity"}:
                 self.log(f"{log_prefix}{k}_step", v, prog_bar=True)
 
