@@ -8,6 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizerBase
 
+from ifitb.data.util import get_video_features
 from ifitb.util.file_utils import cached_path
 from ifitb.util.mask_utils import get_mask_from_sequence_lengths
 
@@ -18,12 +19,13 @@ TYPE_BATCH = MutableMapping[str, Any]
 
 class IntentionDataset(Dataset):
     def __init__(self, data_path: str, tokenizer: Optional[PreTrainedTokenizerBase] = None,
-                 t5_format: bool = True, output_visual: bool = True) -> None:
+                 t5_format: bool = True, output_visual: bool = True, visual_data_path: Optional[str] = None) -> None:
         super().__init__()
 
         self.tokenizer = tokenizer
         self.t5_format = t5_format
         self.output_visual = output_visual
+        self.visual_data_path = visual_data_path
 
         with open(cached_path(data_path)) as file:
             instances_by_action = json.load(file)
@@ -47,8 +49,13 @@ class IntentionDataset(Dataset):
                 })
 
     def __getitem__(self, i: int) -> Mapping[str, Any]:
-        # TODO: output visual
-        return self.instances[i]
+        instance = self.instances[i]
+
+        if "visual" not in instance:
+            instance["visual"] = get_video_features(self.visual_data_path, instance["video_id"],
+                                                    instance["video_start_time"], instance["video_end_time"])
+
+        return instance
 
     def __len__(self) -> int:
         return len(self.instances)

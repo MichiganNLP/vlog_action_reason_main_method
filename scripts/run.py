@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -8,7 +9,8 @@ import torch
 from pytorch_lightning.trainer.connectors.profiler_connector import PROFILERS
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-from ifitb.data.data_module import IntentionFitbDataModule, URL_INTENTIONS_TEST, URL_INTENTIONS_TRAIN
+from ifitb.data.data_module import IntentionFitbDataModule, URL_INTENTIONS_TEST, URL_INTENTIONS_TRAIN, \
+    URL_VISUAL_FEATURES
 from ifitb.model.t5_filler_model import T5FillerModel
 from ifitb.model.t5_visual_module import T5AndVisual
 from ifitb.util.argparse_with_defaults import ArgumentParserWithDefaults
@@ -19,7 +21,7 @@ def _parse_args() -> argparse.Namespace:
 
     parser.add_argument("--intentions-train-path", default=URL_INTENTIONS_TRAIN)
     parser.add_argument("--intentions-test-path", default=URL_INTENTIONS_TEST)
-    # parser.add_argument("--visual-data-dir", default="...")  # TODO
+    parser.add_argument("--visual-data-dir", default=URL_VISUAL_FEATURES)
 
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--num-workers", "-j", type=int, default=0,
@@ -81,6 +83,9 @@ def main() -> None:
     if args.text_only:
         t5_like_pretrained_model = AutoModelForSeq2SeqLM.from_pretrained(args.model)
     else:
+        warnings.filterwarnings("ignore", message=r"Some weights of T5AndVisual .+ are newly initialized:"
+                                                  r" \['encoder\.embed_video\.weight', 'encoder\.embed_video\.bias'\]\n"
+                                                  r".+")  # FIXME: not working
         t5_like_pretrained_model = T5AndVisual.from_pretrained(args.model, visual_size=args.visual_size)
 
     filler_kwargs = {"t5_like_pretrained_model": t5_like_pretrained_model, "tokenizer": tokenizer, "lr": args.lr,
@@ -98,7 +103,8 @@ def main() -> None:
     data_module = IntentionFitbDataModule(tokenizer=tokenizer, batch_size=args.batch_size, num_workers=args.num_workers,
                                           output_visual=not args.text_only,
                                           intentions_train_path=args.intentions_train_path,
-                                          intentions_test_path=args.intentions_test_path)
+                                          intentions_test_path=args.intentions_test_path,
+                                          visual_data_path=args.visual_data_dir)
 
     if args.train:
         trainer.fit(filler, datamodule=data_module)

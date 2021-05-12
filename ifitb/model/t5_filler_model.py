@@ -104,10 +104,9 @@ class T5FillerModel(pl.LightningModule):
         self.write_prediction("choices", choices)  # noqa
 
         # Encode the input only once, then reuse for the choices.
-        kwargs = self.t5_pretrained_model._prepare_encoder_decoder_kwargs_for_generation(text_ids,  # noqa
-                                                                                         {"output_hidden_states": True,
-                                                                                          "output_attentions": True,
-                                                                                          **kwargs})
+        kwargs = self.t5_pretrained_model._prepare_encoder_decoder_kwargs_for_generation(
+            text_ids,  # noqa
+            {"attention_mask": text_attention_mask, "output_hidden_states": True, "output_attentions": True, **kwargs})
 
         # TODO (optimization): `expand` every variable, reshape choice_ids
         # batch_size, max_choice_count = choices_ids.shape[:2]
@@ -128,8 +127,7 @@ class T5FillerModel(pl.LightningModule):
         for i, choice_ids in enumerate(choices_ids.transpose(1, 0)):
             # `clone()` so `view()` works when computing the cross-entropy loss.
             # It's also convenient so we skip reverting the values as well.
-            output = self(text_ids, text_attention_mask, choice_ids.clone(), revert_changes_to_label_ids=False,
-                          **kwargs)
+            output = self(text_ids, label_ids=choice_ids.clone(), revert_changes_to_label_ids=False, **kwargs)
             self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
 
             choice_normalized_logits = compute_label_normalized_logits(output.logits, choice_ids,
@@ -146,8 +144,7 @@ class T5FillerModel(pl.LightningModule):
                              for choices_prob_instance, choices_ids_instance in zip(choices_prob, choices_ids)]
         self.write_prediction("choices_prob", choices_prob_list)  # noqa
 
-        # generated_output = self.t5_pretrained_model.generate(text_ids, attention_mask=text_attention_mask,  # noqa
-        #                                                      **self.generate_kwargs, **kwargs)
+        # generated_output = self.t5_pretrained_model.generate(text_ids, **self.generate_kwargs, **kwargs)  # noqa
         #
         # generated_ids = generated_output.sequences
         # generated = self.tokenizer.batch_decode(
