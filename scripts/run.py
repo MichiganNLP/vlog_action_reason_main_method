@@ -134,7 +134,7 @@ def main() -> None:
 
     if args.train:
         print("Training with labeled data started")
-        trainer.fit(filler, datamodule=data_module)
+        trainer.fit(filler, datamodule=data_module)  # FIXME: it doesn't work to `fit` 2 times consecutively.
 
     if args.use_test_set:
         trainer.test(filler, datamodule=data_module)
