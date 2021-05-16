@@ -51,6 +51,7 @@ class FitbDataset(Dataset):
                                                _blank_reason(instance["sentence_after"]))
 
                 if labels := [label for label in labels if label]:
+                    # TODO: check if the video feature file exists.
                     self.instances.append({
                         "text_with_blanks": " ".join(text_with_blanks),
                         "label": labels,
