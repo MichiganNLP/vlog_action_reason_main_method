@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizerBase
 
-from ifitb.data.util import get_video_features
+from ifitb.data.util import get_video_features, video_feature_file_exists
 from ifitb.util.file_utils import cached_path
 from ifitb.util.mask_utils import get_mask_from_sequence_lengths
 
@@ -38,7 +38,7 @@ class FitbDataset(Dataset):
         self.tokenizer = tokenizer
         self.t5_format = t5_format
         self.output_visual = output_visual
-        self.visual_data_path = visual_data_path
+        self.visual_data_path = cached_path(visual_data_path)
 
         with open(cached_path(data_path)) as file:
             instances_by_action = json.load(file)
@@ -50,14 +50,19 @@ class FitbDataset(Dataset):
                                                _blank_reason(instance["sentence"]),
                                                _blank_reason(instance["sentence_after"]))
 
-                if labels := [label for label in labels if label]:
-                    # TODO: check if the video feature file exists.
+                video_id = instance["video"]
+                video_start_time = instance["time_s"]
+                video_end_time = instance["time_e"]
+
+                if (labels := [label for label in labels if label]) \
+                        and (not self.output_visual or video_feature_file_exists(self.visual_data_path, video_id,
+                                                                                 video_start_time, video_end_time)):
                     self.instances.append({
                         "text_with_blanks": " ".join(text_with_blanks),
                         "label": labels,
-                        "video_id": instance["video"],
-                        "video_start_time": instance["time_s"],
-                        "video_end_time": instance["time_e"],
+                        "video_id": video_id,
+                        "video_start_time": video_start_time,
+                        "video_end_time": video_end_time,
                     })
 
     def __getitem__(self, i: int) -> Mapping[str, Any]:

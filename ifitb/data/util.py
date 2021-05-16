@@ -5,8 +5,6 @@ from datetime import timedelta
 import numpy as np
 import torch
 
-from ifitb.util.file_utils import cached_path
-
 # We ignore the sub-second component as the filenames are truncated.
 RE_TIME = re.compile(r"^(?P<hours>\d+?):(?P<minutes>\d+?):(?P<seconds>\d+?)(?:\.\d+)?$")
 
@@ -37,9 +35,13 @@ def _get_video_features(visual_data_dir: str, filename: str) -> torch.Tensor:
     return torch.from_numpy(np.load(path)).T
 
 
-def get_video_features(visual_data_dir: str, video_id: str, start_time_str: str, end_time_str: str) -> torch.Tensor:
-    visual_data_dir = cached_path(visual_data_dir)
+def video_feature_file_exists(visual_data_dir: str, video_id: str, start_time_str: str, end_time_str: str) -> bool:
+    filename = _get_video_feature_filename(video_id, start_time=_parse_time(start_time_str),
+                                           end_time=_parse_time(end_time_str))
+    return bool(next(glob.iglob(f"{visual_data_dir}/*/{filename}"), False))
 
+
+def get_video_features(visual_data_dir: str, video_id: str, start_time_str: str, end_time_str: str) -> torch.Tensor:
     filename = _get_video_feature_filename(video_id, start_time=_parse_time(start_time_str),
                                            end_time=_parse_time(end_time_str))
     return _get_video_features(visual_data_dir, filename)
