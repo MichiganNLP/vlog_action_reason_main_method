@@ -11,9 +11,9 @@ from ifitb.data.intention_dataset import IntentionDataset
 URL_FITB_DATA = "https://www.dropbox.com/s/0wyll5tvdjzu7zu/" \
                 "dict_sentences_per_verb_all_MARKERS_without_val_and_test.json?dl=1"
 
-URL_INTENTIONS_TRAIN = "https://www.dropbox.com/s/l83uqlw0o25g37w/train.json?dl=1"
-URL_INTENTIONS_VAL = "https://www.dropbox.com/s/w2ezhwamu3mjvmh/val.json?dl=1"
-URL_INTENTIONS_TEST = "https://www.dropbox.com/s/4h78b71294r6fws/dict_web_trial_test_santi.json?dl=1"
+URL_INTENTIONS_TRAIN = "https://www.dropbox.com/s/0zrvjcq90sxi6e4/train2.json?dl=1"
+URL_INTENTIONS_VAL = "https://www.dropbox.com/s/zfdpv6h4rcwa8bm/val2.json?dl=1"
+URL_INTENTIONS_TEST = "https://www.dropbox.com/s/mce8szi50tdpvwv/test2.json?dl=1"
 
 URL_VISUAL_FEATURES = "https://www.dropbox.com/s/k4zjwcdz4lksv0j/i3d_video_features.tar.gz?dl=1!i3d_video_features"
 
@@ -47,13 +47,15 @@ class IntentionFitbDataModule(pl.LightningDataModule):  # noqa
                               output_visual=self.output_visual, visual_data_path=self.visual_data_path)
         # TODO: bucket-batching could make training faster, and consume less memory.
         return DataLoader(dataset, shuffle=True, batch_size=self.batch_size, num_workers=self.num_workers,
-                          pin_memory=True, collate_fn=None if self.eval_batch_size is None else dataset.collate_fn)
+                          pin_memory=True, collate_fn=None if self.eval_batch_size is None else dataset.collate_fn,
+                          persistent_workers=self.num_workers > 0)
 
     def _dataloader(self, data_path: str, batch_size: int, train: bool) -> DataLoader:
         dataset = IntentionDataset(data_path, self.tokenizer, t5_format=self.t5_format,
                                    output_visual=self.output_visual, visual_data_path=self.visual_data_path)
         return DataLoader(dataset, shuffle=train, batch_size=batch_size, num_workers=self.num_workers,
-                          pin_memory=True, collate_fn=None if batch_size is None else dataset.collate_fn)
+                          pin_memory=True, collate_fn=None if batch_size is None else dataset.collate_fn,
+                          persistent_workers=self.num_workers > 0)
 
     @overrides
     def train_dataloader(self) -> DataLoader:
