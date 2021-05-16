@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 import argparse
 import warnings
+from typing import Type
 
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.trainer.connectors.profiler_connector import PROFILERS
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer, PreTrainedModel
 
 from ifitb.data.data_module import IntentionFitbDataModule, URL_INTENTIONS_TEST, URL_INTENTIONS_TRAIN, \
     URL_INTENTIONS_VAL, URL_VISUAL_FEATURES
 from ifitb.model.t5_filler_model import T5FillerModel
 from ifitb.model.t5_visual_module import T5AndVisual
 from ifitb.util.argparse_with_defaults import ArgumentParserWithDefaults
+
+DEFAULT_MODEL_NAME = "t5-base"
 
 
 def _parse_args() -> argparse.Namespace:
@@ -39,7 +42,7 @@ def _parse_args() -> argparse.Namespace:
     # Also, note you still can't easily get the user-uploaded models, as they're resolved dynamically.
     # So we can't provide model name choices.
     # I guess we can check the options from the URL below, though I'm not sure if that's the exact filter tag.
-    parser.add_argument("--model", default="t5-base",
+    parser.add_argument("--model", default=DEFAULT_MODEL_NAME,
                         help="pipeline model. Check the options in https://huggingface.co/models?filter=seq2seq")
     parser.add_argument("--checkpoint-path")
 
@@ -77,20 +80,33 @@ def _pandas_float_format(x: float) -> str:
         return f"{x:.2f}"
 
 
+def _create_model(model_class: Type[PreTrainedModel], model_name: str, use_pretrained: bool, *args,
+                  **kwargs) -> PreTrainedModel:
+    if use_pretrained:
+        return model_class.from_pretrained(model_name, *args, **kwargs)
+    else:
+        config = AutoConfig.from_pretrained(model_name)
+        return model_class.from_config(config, *args, **kwargs)
+
+
 def main() -> None:
     args = _parse_args()
 
     pl.seed_everything(args.seed)
 
+    use_pretrained = bool(args.model)
+    args.model = args.model or DEFAULT_MODEL_NAME
+
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     if args.text_only:
-        t5_like_pretrained_model = AutoModelForSeq2SeqLM.from_pretrained(args.model)
+        t5_like_pretrained_model = _create_model(AutoModelForSeq2SeqLM, args.model, use_pretrained)
     else:
         warnings.filterwarnings("ignore", message=r"Some weights of T5AndVisual .+ are newly initialized:"
                                                   r" \['encoder\.embed_video\.weight', 'encoder\.embed_video\.bias'\]\n"
                                                   r".+")  # FIXME: not working
-        t5_like_pretrained_model = T5AndVisual.from_pretrained(args.model, visual_size=args.visual_size)
+        t5_like_pretrained_model = _create_model(T5AndVisual, args.model, use_pretrained,  # noqa
+                                                 visual_size=args.visual_size)
 
     filler_kwargs = {"t5_like_pretrained_model": t5_like_pretrained_model, "tokenizer": tokenizer, "lr": args.lr,
                      "lr_scheduler": args.lr_scheduler, "weight_decay": args.weight_decay}
