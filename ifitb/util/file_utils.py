@@ -310,7 +310,7 @@ def _session_with_backoff() -> requests.Session:
     """
     session = requests.Session()
     retries = Retry(total=1, backoff_factor=1, status_forcelist=[502, 503, 504])
-    session.mount("http://", HTTPAdapter(max_retries=retries))
+    session.mount("http://", HTTPAdapter(max_retries=retries))  # noqa
     session.mount("https://", HTTPAdapter(max_retries=retries))
 
     return session
