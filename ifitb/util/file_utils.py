@@ -31,8 +31,8 @@ from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
-CACHE_ROOT = Path(os.getenv("LQAM_CACHE_ROOT", Path.home() / ".cache"))
-CACHE_DIRECTORY = str(CACHE_ROOT / "lqam")
+CACHE_ROOT = Path(os.getenv("IFITB_CACHE_ROOT", Path.home() / ".cache"))
+CACHE_DIRECTORY = str(CACHE_ROOT / "ifitb")
 DEPRECATED_CACHE_DIRECTORY = str(CACHE_ROOT / "datasets")
 
 # This variable was deprecated in 0.7.2 since we use a single folder for caching
