@@ -8,8 +8,8 @@ from transformers import PreTrainedTokenizerBase
 from ifitb.data.fitb_dataset import FitbDataset
 from ifitb.data.intention_dataset import IntentionDataset
 
-URL_FITB_DATA = "https://www.dropbox.com/s/0wyll5tvdjzu7zu/" \
-                "dict_sentences_per_verb_all_MARKERS_without_val_and_test.json?dl=1"
+URL_FITB_DATA = "https://www.dropbox.com/s/s2rx6x76or29dd9/" \
+                "dict_sentences_per_verb_all_MARKERS_without_val_and_test2.json?dl=1"
 
 URL_INTENTIONS_TRAIN = "https://www.dropbox.com/s/0zrvjcq90sxi6e4/train2.json?dl=1"
 URL_INTENTIONS_VAL = "https://www.dropbox.com/s/zfdpv6h4rcwa8bm/val2.json?dl=1"
