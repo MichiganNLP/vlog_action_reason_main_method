@@ -103,7 +103,7 @@ def main() -> None:
         t5_like_pretrained_model = _create_model(AutoModelForSeq2SeqLM, args.model, use_pretrained)
     else:
         warnings.filterwarnings("ignore", message=r"Some weights of T5AndVisual .+ are newly initialized:"
-                                                  r" \['encoder\.embed_video\.weight', 'encoder\.embed_video\.bias'\]\n"
+                                                  r" \['encoder\.embed_video\.bias', 'encoder\.embed_video\.weight'\]\n"
                                                   r".+")  # FIXME: not working
         t5_like_pretrained_model = _create_model(T5AndVisual, args.model, use_pretrained,  # noqa
                                                  visual_size=args.visual_size)
