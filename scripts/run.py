@@ -22,7 +22,7 @@ DEFAULT_MODEL_NAME = "t5-base"
 def _parse_args() -> argparse.Namespace:
     parser = ArgumentParserWithDefaults()
 
-    parser.add_argument("--intentions-train-path")
+    parser.add_argument("--intentions-train-path")  # Default set later.
     parser.add_argument("--intentions-val-path", default=URL_INTENTIONS_VAL)
     parser.add_argument("--intentions-test-path", default=URL_INTENTIONS_TEST)
     parser.add_argument("--visual-data-dir", default=URL_VISUAL_FEATURES)
