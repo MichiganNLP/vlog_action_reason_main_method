@@ -36,10 +36,8 @@ class T5FillerModel(pl.LightningModule):
 
         self.tokenizer = tokenizer
 
-        self.threshold = torch.nn.Parameter(torch.tensor(1e-10))
-
-        # TODO: make sure the metric threshold changes when the parameter one does.
-        self.all_metrics = AllMetrics(threshold=self.threshold)  # noqa
+        self.threshold = 1e-10
+        self.all_metrics = AllMetrics(threshold=self.threshold)
 
         self.generate_kwargs = {}
 
@@ -175,10 +173,7 @@ class T5FillerModel(pl.LightningModule):
         #     compute_first_blank(generated_ids, self.t5_pretrained_model.config.decoder_start_token_id,
         #                         self.extra_id_0, self.extra_id_1))
 
-        for k, v in self.all_metrics(choices_prob_list, ground_truth, verb, choices,
-                                     device=next(self.parameters()).device).items():  # noqa
-            if k in {"accuracy", "f1", "ground_truth_prob", "perplexity"}:
-                self.log(f"{log_prefix}{k}_step", v, prog_bar=True)
+        self.all_metrics(choices_prob_list, ground_truth, verb, choices, device=next(self.parameters()).device)
 
         predicted = [[choice for choice, prob in zip(verb_choices, verb_choices_prob_list) if prob > self.threshold]
                      for verb_choices, verb_choices_prob_list in zip(choices, choices_prob_list)]
@@ -194,13 +189,15 @@ class T5FillerModel(pl.LightningModule):
 
     def _on_epoch_end(self, log_prefix: str = "") -> None:
         for k, v in self.all_metrics.compute().items():
-            self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1", "ground_truth_prob"})
+            # if not self.trainer.sanity_checking:
+            self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1"})
 
     def on_validation_epoch_end(self) -> None:
         self._on_epoch_end(log_prefix="val_")
 
     def on_test_epoch_end(self) -> None:
         self._on_epoch_end(log_prefix="test_")
+        print({verb: metric.compute().item() for verb, metric in self.all_metrics.metrics["f1"].metric_by_verb.items()})
 
     @overrides
     def configure_optimizers(self) -> Union[Iterable[Optimizer], Tuple[Iterable[Optimizer], Iterable[_LRScheduler]]]:
