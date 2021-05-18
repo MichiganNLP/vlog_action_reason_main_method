@@ -150,7 +150,8 @@ class T5FillerModel(pl.LightningModule):
             # `clone()` so `view()` works when computing the cross-entropy loss.
             # It's also convenient so we skip reverting the values as well.
             output = self(text_ids, label_ids=choice_ids.clone(), revert_changes_to_label_ids=False, **kwargs)
-            self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
+            if not self.trainer.sanity_checking:
+                self.log(f"{log_prefix}loss", output.loss, prog_bar=True)
 
             choice_normalized_logits = compute_label_normalized_logits(output.logits, choice_ids,
                                                                        self.t5_pretrained_model.config,
@@ -189,8 +190,8 @@ class T5FillerModel(pl.LightningModule):
 
     def _on_epoch_end(self, log_prefix: str = "") -> None:
         for k, v in self.all_metrics.compute().items():
-            # if not self.trainer.sanity_checking:
-            self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1"})
+            if not self.trainer.sanity_checking:
+                self.log(f"{log_prefix}{k}", v, prog_bar=k in {"accuracy", "f1"})
 
     def on_validation_epoch_end(self) -> None:
         self._on_epoch_end(log_prefix="val_")
