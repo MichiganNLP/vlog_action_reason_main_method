@@ -25,7 +25,7 @@ class IntentionDataset(Dataset):
         self.tokenizer = tokenizer
         self.t5_format = t5_format
         self.output_visual = output_visual
-        self.visual_data_path = cached_path(visual_data_path)
+        self.visual_data_path = cached_path(visual_data_path) if visual_data_path else None
 
         with open(cached_path(data_path)) as file:
             instances_by_action = json.load(file)
