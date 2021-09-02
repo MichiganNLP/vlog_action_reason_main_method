@@ -39,7 +39,7 @@ class MetricPerAction(Metric):
 
 
 class AllMetrics(Metric):
-    def __init__(self, threshold: float = 0.5) -> None:  # , compute_prob: bool = True
+    def __init__(self, threshold: float = 0.5) -> None:
         super().__init__()
         self.metrics: MutableMapping[str, Metric] = {
             "accuracy": MetricPerAction(lambda: Accuracy(threshold=threshold, average="samples")),
@@ -48,31 +48,16 @@ class AllMetrics(Metric):
             "recall": MetricPerAction(lambda: Recall(threshold=threshold, average="samples")),
         }
 
-        # if compute_prob:
-        #     self.metrics["ground_truth_prob"] = Average()
-        #     self.metrics["perplexity"] = Perplexity()
-
     @overrides
-    def reset(self):
+    def reset(self) -> None:
         for metric in self.metrics.values():
             metric.reset()
 
-    # def __call__(self, video_ids: Sequence[str], label_prob: Optional[torch.Tensor] = None,
-    #              label_probs: Optional[torch.Tensor] = None,
-    #              perplexity_mask: Optional[torch.Tensor] = None) -> Mapping[str, torch.Tensor]:
     @overrides
     def update(self, preds: Iterator[Sequence[float]], targets: Iterator[Sequence[str]], verbs: Iterator[str],
                choices: Iterator[Sequence[str]], device: Optional[Any] = None) -> None:
         for metric in self.metrics.values():
             metric.update(preds, targets, verbs, choices, device=device)
-
-        # if ground_truth_prob_metric := self.metrics.get("ground_truth_prob"):
-        #     assert label_prob is not None
-        #     output["ground_truth_prob"] = ground_truth_prob_metric(label_prob)
-        #
-        # if perplexity_metric := self.metrics.get("perplexity"):
-        #     assert label_probs is not None and perplexity_mask is not None
-        #     output["perplexity"] = perplexity_metric(label_probs, perplexity_mask)
 
     @overrides
     def compute(self) -> Mapping[str, torch.Tensor]:
