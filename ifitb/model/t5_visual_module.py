@@ -44,7 +44,7 @@ class TextVisualEncoder(T5Stack):  # noqa
 class T5AndVisual(T5ForConditionalGeneration):
     def __init__(self, config: T5Config, visual_size: int) -> None:
         super().__init__(config)
-        self.encoder = TextVisualEncoder(self.encoder, visual_size)
+        self.encoder = TextVisualEncoder(self.encoder, visual_size)  # noqa
 
     @overrides
     def prepare_inputs_for_generation(self, input_ids: torch.Tensor, visual: Optional[torch.Tensor] = None,
@@ -66,7 +66,7 @@ class T5AndVisual(T5ForConditionalGeneration):
         # The attention mask used in the encoder (the combined mask) is actually necessary for the decoder even when
         # providing "encoder_outputs". We could compute it once in the encoder, return it as one of its fields and use
         # it here. However, in `T5FillerModel.generative_step` we input the encoder outputs but without the mask
-        # since its constructed from the `generate` output which in turn only returns certain fields (not the mask).
+        # since it's constructed from the `generate` output which in turn only returns certain fields (not the mask).
         attention_mask = _combine_attention_masks(attention_mask, visual_attention_mask)
 
         return super().forward(attention_mask=attention_mask, labels=labels, **kwargs)  # noqa
