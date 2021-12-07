@@ -3,7 +3,7 @@ variables:
   PYTHONPATH: .
 dependencies:
   - pip:
-    # `av` from conda-forge uses an ffmpeg version from the same Conda channel that doesn't have the AV codecs
+    # `av` from conda-forge uses a FFmpeg version from the same Conda channel that doesn't have the AV codecs
     # (which some of our videos use). See https://github.com/conda-forge/ffmpeg-feedstock/pull/98
     -            av==8.0.3
     # We could use the Conda channel "HuggingFace".
