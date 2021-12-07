@@ -39,13 +39,13 @@ Use `--help` to see all the options.
 ## 4. Train
 
 Follow these steps to train a new model. Note you don't have to do this as we provide [a pre-trained
-model](...).
+model](https://github.com/MichiganNLP/vlog_action_reason_main_method/releases/download/files/epoch.3-step.223_only_model.pt.zip).
 
 b. Prepare the unlabeled data by removing the test data out of all the raw data:
 
   ```bash
   ./scripts/fitb_data_without_test.py \
-    https://www.dropbox.com/s/93wt5jexgudducu/dict_sentences_per_verb_all_MARKERS.json?dl=1 \
+    https://github.com/MichiganNLP/vlog_action_reason_main_method/releases/download/files/dict_sentences_per_verb_all_MARKERS.json \
     https://raw.githubusercontent.com/MichiganNLP/vlog_action_reason/master/data/test.json \
     > dict_sentences_per_verb_all_MARKERS_without_test.json
   ```
@@ -80,5 +80,5 @@ To just evaluate a checkpoint without training, do:
 Feel free to try it out with our pre-trained model:
 
 ```bash
-CHECKPOINT_PATH=...
+CHECKPOINT_PATH=https://github.com/MichiganNLP/vlog_action_reason_main_method/releases/download/files/epoch.3-step.223_only_model.pt.zip
 ```
