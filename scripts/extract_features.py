@@ -107,8 +107,8 @@ def main() -> None:
     # stride of 16 instead of 8). It could be solved by sampling more strategically, so that we recover those 8
     # frames back, and in the end need less RAM.
     #
-    # Joao Carreira talks about this on GitHub (https://github.com/deepmind/kinetics-i3d/issues/97), and mentions
-    # this paper: https://arxiv.org/abs/1806.03863
+    # Joao Carreira talks about it on GitHub (https://github.com/deepmind/kinetics-i3d/issues/97), and mentions it
+    # on the paper https://arxiv.org/abs/1806.03863
     dataset = VideoDataset(args.input_path, clip_length_in_frames=args.frames_per_clip,
                            frames_between_clips=args.frames_per_clip - 8, frame_rate=25,
                            video_clips_num_workers=args.num_workers_video_clips)
