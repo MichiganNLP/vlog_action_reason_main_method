@@ -54,6 +54,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--no-deterministic", dest="deterministic", action="store_false")
 
     parser.add_argument("--predictions-output-path", default="predictions.csv")
+    parser.add_argument("--print-predictions", action="store_true")
 
     parser.add_argument("--trainer-default-root-dir")
 
@@ -154,12 +155,14 @@ def main() -> None:
                    for k, v in next(iter(trainer.evaluation_loop.predictions.predictions.values())).items()}
     df = pd.DataFrame.from_dict(predictions)
     df.to_csv(args.predictions_output_path, index=False)
-    print(f"Predictions saved in {args.predictions_output_path}. First rows:")
-    print()
-    pd.options.display.float_format = _pandas_float_format
-    with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 0,
-                           "display.max_colwidth", None):
-        print(df.head(10))
+
+    if args.print_predictions:
+        print(f"Predictions saved in {args.predictions_output_path}. First rows:")
+        print()
+        pd.options.display.float_format = _pandas_float_format
+        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 0,
+                               "display.max_colwidth", None):
+            print(df.head(10))
 
 
 if __name__ == "__main__":
