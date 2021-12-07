@@ -3,6 +3,9 @@
 This is the main method of the paper "WhyAct: Identifying Action Reasons in Lifestyle Vlogs" by Ignat et al., 2021.
 See more info in the [main repo](https://github.com/michigannlp/vlog_action_reason).
 
+Some code in this repo is based on the [Video Fill-in-the-Blank
+code](https://github.com/MichiganNLP/video-fill-in-the-blank).
+
 ## Setup
 
 Using Conda:

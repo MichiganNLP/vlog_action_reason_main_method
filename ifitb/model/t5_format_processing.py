@@ -26,8 +26,7 @@ from ifitb.util import iterable_utils
 
 # Another consideration is to avoid doing id-token-string conversions as much as we can.
 # So the input and output types for these functions are the ones that are most convenient to minimize
-# these conversations from inside the functions but also from outside of them (at least for the use-case that they were
-# created).
+# these conversions from inside the functions but also from outside (at least for the use-case that they were created).
 
 TYPE_BLANK_MAP = Mapping[int, torch.Tensor]
 
