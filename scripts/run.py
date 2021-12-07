@@ -46,7 +46,6 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default=DEFAULT_MODEL_NAME,
                         help="pipeline model. Check the options in https://huggingface.co/models?filter=seq2seq")
     parser.add_argument("--checkpoint-path")
-    parser.add_argument("--alignment-checkpoint-path")
 
     parser.add_argument("--text-only", action="store_true")
 
@@ -114,12 +113,6 @@ def main() -> None:
                                                   r".+")  # FIXME: not working
         t5_like_pretrained_model = _create_model(T5AndVisual, args.model, use_pretrained,  # noqa
                                                  visual_size=args.visual_size)
-
-    if args.alignment_checkpoint_path:
-        args.alignment_checkpoint_path = cached_path(args.alignment_checkpoint_path)
-        state_dict = torch.load(args.alignment_checkpoint_path)["state_dict"]
-        state_dict = {k[len("model."):]: v for k, v in state_dict.items()}
-        t5_like_pretrained_model.load_state_dict(state_dict)  # noqa
 
     filler_kwargs = {"t5_like_pretrained_model": t5_like_pretrained_model, "tokenizer": tokenizer, "lr": args.lr,
                      "lr_scheduler": args.lr_scheduler, "weight_decay": args.weight_decay}
