@@ -67,13 +67,11 @@ c. Fine-tune the obtained model on the val data.
 ## 5. Evaluate
 
 ```bash
-./scripts/run.py --checkpoint-path $CHECKPOINT_PATH
+./scripts/run.py --checkpoint-path $CHECKPOINT_PATH --use-test-set
 ```
 
-Feel free to try with our pre-trained model:
+Feel free to try it with our pre-trained model:
 
 ```bash
 CHECKPOINT_PATH=https://www.dropbox.com/s/m0x6ey65jzjzgwz/intention-pretrained.ckpt?dl=1
 ```
-
-Use `--use-test-set` to evaluate on the test data.
