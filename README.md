@@ -19,10 +19,10 @@ conda activate intention-fitb
 
 This step is only necessary if you want to extract the features, which you don't have to do as we provide them already.
 
-a. Install [youtube-dl](https://youtube-dl.org/), [FFmpeg](https://www.ffmpeg.org/),
+1. Install [youtube-dl](https://youtube-dl.org/), [FFmpeg](https://www.ffmpeg.org/),
    [jq](https://stedolan.github.io/jq/), and [tqdm](https://github.com/tqdm/tqdm) (they can all be installed from 
    Conda).
-b. Run [`download_videos.sh` from the main
+2. Run [`download_videos.sh` from the main
    repo](https://github.com/MichiganNLP/vlog_action_reason/blob/master/download_videos.sh).
 
 ## 3. Extract features
@@ -41,7 +41,7 @@ Use `--help` to see all the options.
 Follow these steps to train a new model. Note you don't have to do this as we provide [a pre-trained
 model](https://github.com/MichiganNLP/vlog_action_reason_main_method/releases/download/files/epoch.3-step.223_only_model.pt.zip).
 
-b. Prepare the unlabeled data by removing the test data out of all the raw data:
+1. Prepare the unlabeled data by removing the test data out of all the raw data:
 
   ```bash
   ./scripts/fitb_data_without_test.py \
@@ -50,7 +50,7 @@ b. Prepare the unlabeled data by removing the test data out of all the raw data:
     > dict_sentences_per_verb_all_MARKERS_without_test.json
   ```
 
-b. Fine-tune T5 on text+video on this unlabeled data (we already computed it, but you can set your own using 
+2. Fine-tune T5 on text+video on this unlabeled data (we already computed it, but you can set your own using 
 `--fitb-data-path dict_sentences_per_verb_all_MARKERS_without_test.json`):
 
   ```bash
@@ -61,7 +61,7 @@ b. Fine-tune T5 on text+video on this unlabeled data (we already computed it, bu
 
   The saved checkpoint will be in `CHECKPOINT_PATH=lightning_logs/version_$N/checkpoints/epoch=$E-step=$S.ckpt`.
 
-c. Subsequently, fine-tune on the dev data and evaluate it on the test set.
+3. Subsequently, fine-tune on the dev data and evaluate it on the test set.
 
   ```bash
   ./scripts/run.py --train --use-test-set --checkpoint-path $CHECKPOINT_PATH
