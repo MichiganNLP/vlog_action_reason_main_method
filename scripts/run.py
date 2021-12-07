@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import argparse
-import warnings
 from typing import Type
 
 import numpy as np
@@ -10,8 +9,8 @@ import torch
 from pytorch_lightning.trainer.connectors.profiler_connector import PROFILERS
 from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer, PreTrainedModel
 
-from ifitb.data.data_module import IntentionFitbDataModule, URL_INTENTIONS_TEST, URL_INTENTIONS_TRAIN, \
-    URL_INTENTIONS_TRAIN_AND_VAL, URL_INTENTIONS_VAL, URL_VISUAL_FEATURES
+from ifitb.data.data_module import IntentionFitbDataModule, URL_FITB_DATA, URL_INTENTIONS_TEST, URL_INTENTIONS_TRAIN, \
+    URL_INTENTIONS_VAL, URL_VISUAL_FEATURES
 from ifitb.model.t5_filler_model import T5FillerModel
 from ifitb.model.t5_visual_module import T5AndVisual
 from ifitb.util.argparse_with_defaults import ArgumentParserWithDefaults
@@ -23,7 +22,8 @@ DEFAULT_MODEL_NAME = "t5-base"
 def _parse_args() -> argparse.Namespace:
     parser = ArgumentParserWithDefaults()
 
-    parser.add_argument("--intentions-train-path")  # Default set later.
+    parser.add_argument("--fitb-data-path", default=URL_FITB_DATA)
+    parser.add_argument("--intentions-train-path", default=URL_INTENTIONS_TRAIN)
     parser.add_argument("--intentions-val-path", default=URL_INTENTIONS_VAL)
     parser.add_argument("--intentions-test-path", default=URL_INTENTIONS_TEST)
     parser.add_argument("--visual-data-dir", default=URL_VISUAL_FEATURES)
@@ -70,12 +70,7 @@ def _parse_args() -> argparse.Namespace:
                         type=lambda s: s or None)
     parser.add_argument("--weight-decay", default=1e-4, type=float)
 
-    args = parser.parse_args()
-
-    if not args.intentions_train_path:
-        args.intentions_train_path = URL_INTENTIONS_TRAIN_AND_VAL if args.use_test_set else URL_INTENTIONS_TRAIN
-
-    return args
+    return parser.parse_args()
 
 
 def _pandas_float_format(x: float) -> str:
@@ -102,16 +97,12 @@ def main() -> None:
     pl.seed_everything(args.seed)
 
     use_pretrained = bool(args.model)
-    args.model = args.model or DEFAULT_MODEL_NAME
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     if args.text_only:
         t5_like_pretrained_model = _create_model(AutoModelForSeq2SeqLM, args.model, use_pretrained)
     else:
-        warnings.filterwarnings("ignore", message=r"Some weights of T5AndVisual .+ are newly initialized:"
-                                                  r" \['encoder\.embed_video\.\w+', 'encoder\.embed_video\.\w+'\]\n"
-                                                  r".+")  # FIXME: not working
         t5_like_pretrained_model = _create_model(T5AndVisual, args.model, use_pretrained,  # noqa
                                                  visual_size=args.visual_size)
 
@@ -130,6 +121,7 @@ def main() -> None:
 
     data_module = IntentionFitbDataModule(tokenizer=tokenizer, batch_size=args.batch_size, num_workers=args.num_workers,
                                           output_visual=not args.text_only,
+                                          fitb_data_path=args.fitb_data_path,
                                           intentions_train_path=args.intentions_train_path,
                                           intentions_val_path=args.intentions_val_path,
                                           intentions_test_path=args.intentions_test_path,

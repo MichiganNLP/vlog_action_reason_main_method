@@ -15,8 +15,6 @@ conda env create
 conda activate intention-fitb
 ```
 
-Place the JSON files under `data/`.
-
 ## 2. Download the videos
 
 This step is only necessary if you want to extract the features, which you don't have to do as we provide them already.
@@ -41,37 +39,46 @@ Use `--help` to see all the options.
 ## 4. Train
 
 Follow these steps to train a new model. Note you don't have to do this as we provide [a pre-trained
-model](https://www.dropbox.com/s/m0x6ey65jzjzgwz/intention-pretrained.ckpt?dl=1).
+model](...).
 
-0. Split the val data into val and train (goes before or after the next one?).
-a. Prepare the unlabeled data:
+b. Prepare the unlabeled data by removing the test data out of all the raw data:
 
-   ```bash
-   ./scripts/fitb_data_without_val_test.py 
-   ```
+  ```bash
+  ./scripts/fitb_data_without_test.py \
+    https://www.dropbox.com/s/93wt5jexgudducu/dict_sentences_per_verb_all_MARKERS.json?dl=1 \
+    https://raw.githubusercontent.com/MichiganNLP/vlog_action_reason/master/data/test.json \
+    > dict_sentences_per_verb_all_MARKERS_without_test.json
+  ```
 
-b. Fine-tune T5 on text+video on unlabeled data (you can do text-only).
+b. Fine-tune T5 on text+video on this unlabeled data (we already computed it, but you can set your own using 
+`--fitb-data-path dict_sentences_per_verb_all_MARKERS_without_test.json`):
 
-   ```bash
-   ./scripts/run.py --fitb-train
-   ```
+  ```bash
+  ./scripts/run.py --fitb-train
+  ```
 
-   You can see the available options using `--help`.
+  > You can see the available options using `--help`.
 
-c. Fine-tune the obtained model on the val data.
+  The saved checkpoint will be in `CHECKPOINT_PATH=lightning_logs/version_$N/checkpoints/epoch=$E-step=$S.ckpt`.
 
-   ```bash
-   ./scripts/run.py --train
-   ```
+c. Subsequently, fine-tune on the dev data and evaluate it on the test set.
+
+  ```bash
+  ./scripts/run.py --train --use-test-set --checkpoint-path $CHECKPOINT_PATH
+  ```
+
+  Similarly to the previous step, you can find a new checkpoint was created.
 
 ## 5. Evaluate
 
+To just evaluate a checkpoint without training, do:
+
 ```bash
-./scripts/run.py --checkpoint-path $CHECKPOINT_PATH --use-test-set
+./scripts/run.py --use-test-set --checkpoint-path $CHECKPOINT_PATH
 ```
 
-Feel free to try it with our pre-trained model:
+Feel free to try it out with our pre-trained model:
 
 ```bash
-CHECKPOINT_PATH=https://www.dropbox.com/s/m0x6ey65jzjzgwz/intention-pretrained.ckpt?dl=1
+CHECKPOINT_PATH=...
 ```
