@@ -13,7 +13,7 @@ URL_FITB_DATA = "https://www.dropbox.com/s/s2rx6x76or29dd9/" \
 
 URL_INTENTIONS_TRAIN = "https://www.dropbox.com/s/0zrvjcq90sxi6e4/train2.json?dl=1"
 URL_INTENTIONS_VAL = "https://www.dropbox.com/s/zfdpv6h4rcwa8bm/val2.json?dl=1"
-URL_INTENTIONS_TEST = "https://www.dropbox.com/s/mce8szi50tdpvwv/test2.json?dl=1"
+URL_INTENTIONS_TEST = "https://raw.githubusercontent.com/MichiganNLP/vlog_action_reason/master/data/test.json"
 
 URL_INTENTIONS_TRAIN_AND_VAL = "https://www.dropbox.com/s/xk8lhugfpupxbvf/val_and_train2.json?dl=1"
 
