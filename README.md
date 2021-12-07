@@ -6,7 +6,7 @@ See more info in the [main repo](https://github.com/michigannlp/vlog_action_reas
 Some code in this repo is based on the [Video Fill-in-the-Blank
 code](https://github.com/MichiganNLP/video-fill-in-the-blank).
 
-## Setup
+## 1. Setup
 
 Using Conda:
 
@@ -17,17 +17,17 @@ conda activate intention-fitb
 
 Place the JSON files under `data/`.
 
-## Download the videos
+## 2. Download the videos
 
 This step is only necessary if you want to extract the features, which you don't have to do as we provide them already.
 
-1. Install [youtube-dl](https://youtube-dl.org/), [FFmpeg](https://www.ffmpeg.org/),
+a. Install [youtube-dl](https://youtube-dl.org/), [FFmpeg](https://www.ffmpeg.org/),
    [jq](https://stedolan.github.io/jq/), and [tqdm](https://github.com/tqdm/tqdm) (they can all be installed from 
    Conda).
-2. Run [`download_videos.sh` from the main
+b. Run [`download_videos.sh` from the main
    repo](https://github.com/MichiganNLP/vlog_action_reason/blob/master/download_videos.sh).
 
-## Extract features
+## 3. Extract features
 
 We provide pre-extracted features, and they're directly used from the code (you don't have to download them).
 Still, if you want to run this step yourself, do:
@@ -38,10 +38,42 @@ Still, if you want to run this step yourself, do:
 
 Use `--help` to see all the options.
 
-## Train
+## 4. Train
+
+Follow these steps to train a new model. Note you don't have to do this as we provide [a pre-trained
+model](https://www.dropbox.com/s/m0x6ey65jzjzgwz/intention-pretrained.ckpt?dl=1).
+
+0. Split the val data into val and train (goes before or after the next one?).
+a. Prepare the unlabeled data:
+
+   ```bash
+   ./scripts/fitb_data_without_val_test.py 
+   ```
+
+b. Fine-tune T5 on text+video on unlabeled data (you can do text-only).
+
+   ```bash
+   ./scripts/run.py --fitb-train
+   ```
+
+   You can see the available options using `--help`.
+
+c. Fine-tune the obtained model on the val data.
+
+   ```bash
+   ./scripts/run.py --train
+   ```
+
+## 5. Evaluate
 
 ```bash
-./scripts/run.py --train
+./scripts/run.py --checkpoint-path $CHECKPOINT_PATH
 ```
 
-See the available options using `--help`.
+Feel free to try with our pre-trained model:
+
+```bash
+CHECKPOINT_PATH=https://www.dropbox.com/s/m0x6ey65jzjzgwz/intention-pretrained.ckpt?dl=1
+```
+
+Use `--use-test-set` to evaluate on the test data.
